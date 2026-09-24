@@ -1,0 +1,16 @@
+flowchart LR
+  subgraph AWS["AWS Student/Demo"]
+    WEB[S3 + CloudFront] --> API[API Gateway HTTP] --> COG[Cognito] --> L[1 Lambda BFF]
+  end
+  subgraph LOCAL["Local / On-prem simulator"]
+    CORE[Core API] --> PG[(PostgreSQL)] --> OUT[Outbox] --> PUB[Publisher]
+  end
+  subgraph AZ["Azure Student LITE"]
+    EH[Event Hubs] --> FE[1 Container App fraud-engine]
+    FE --> SQL[(Azure SQL profiles + cases)]
+    FE --> SB[Service Bus] --> CASE[Case module/service] --> SQL
+    EH --> ADLS[ADLS]
+    SQL --> PBI[Power BI Desktop]
+  end
+  L --> CORE
+  PUB --> EH

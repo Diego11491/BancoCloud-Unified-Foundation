@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bancocloud.local/contracts/transaction.v1.schema.json",
+  "title": "TransactionPosted.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "event_id", "event_type", "event_time", "transaction_id",
+    "customer_ref", "account_ref", "transaction_type", "amount", "currency",
+    "channel", "authentication_method", "transaction_status", "correlation_id"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "event_id": {"type": "string", "format": "uuid"},
+    "event_type": {"const": "TransactionPosted"},
+    "event_time": {"type": "string", "format": "date-time"},
+    "transaction_id": {"type": "string", "format": "uuid"},
+    "customer_ref": {"type": "string", "minLength": 16, "maxLength": 128},
+    "account_ref": {"type": "string", "minLength": 16, "maxLength": 128},
+    "payment_instrument_ref": {"type": ["string", "null"], "maxLength": 128},
+    "transaction_type": {
+      "type": "string",
+      "enum": ["TRANSFER", "CARD_PURCHASE", "CASH_WITHDRAWAL", "PAYMENT", "DEPOSIT", "LOAN_PAYMENT"]
+    },
+    "amount": {"type": "number", "exclusiveMinimum": 0},
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "channel": {"type": "string", "enum": ["MOBILE", "WEB", "ATM", "POS", "API"]},
+    "device_ref": {"type": ["string", "null"], "maxLength": 128},
+    "beneficiary_ref": {"type": ["string", "null"], "maxLength": 128},
+    "location": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "country": {"type": "string", "pattern": "^[A-Z]{2}$"},
+        "region": {"type": ["string", "null"], "maxLength": 64}
+      },
+      "required": ["country"]
+    },
+    "authentication_method": {
+      "type": "string",
+      "enum": ["PASSWORD_MFA", "BIOMETRIC_MFA", "OTP", "TOKEN", "SESSION", "OTHER"]
+    },
+    "transaction_status": {"type": "string", "enum": ["POSTED"]},
+    "correlation_id": {"type": "string", "format": "uuid"},
+    "source_system": {"type": "string", "maxLength": 64}
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bancocloud.local/contracts/fraud-score.v1.schema.json",
+  "title": "FraudScore.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "transaction_id", "event_id", "scored_at", "risk_score",
+    "risk_level", "reason_codes", "model_version", "feature_version", "policy_version", "correlation_id"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "transaction_id": {"type": "string", "format": "uuid"},
+    "event_id": {"type": "string", "format": "uuid"},
+    "scored_at": {"type": "string", "format": "date-time"},
+    "risk_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "risk_level": {"type": "string", "enum": ["LOW", "MEDIUM", "HIGH"]},
+    "reason_codes": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[A-Z0-9_]+$"},
+      "uniqueItems": true
+    },
+    "model_version": {"type": "string", "minLength": 1},
+    "feature_version": {"type": "string", "minLength": 1},
+    "policy_version": {"type": "string", "minLength": 1},
+    "correlation_id": {"type": "string", "format": "uuid"},
+    "processing_ms": {"type": "integer", "minimum": 0}
+  }
+}

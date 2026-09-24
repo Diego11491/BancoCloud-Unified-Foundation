@@ -1,0 +1,32 @@
+{
+  "source_sha256": "8cdec41aa0a8bb4832000817d45e160897b30dcaa91cc5ad87b4d10a1867a0c7",
+  "source_rows": 5960,
+  "generated_events": 10000,
+  "seed": 42,
+  "generated_label_counts": {
+    "1": 323,
+    "0": 9677
+  },
+  "profile_fields": [
+    "departamento",
+    "app_preferida",
+    "tipo_operacion_frecuente",
+    "monto_promedio_transaccion",
+    "frecuencia_transacciones",
+    "customer_ref",
+    "account_ref"
+  ],
+  "excluded_source_fields": [
+    "alerta_sistema",
+    "fraude_confirmado",
+    "score_riesgo",
+    "historial_suspicious",
+    "dispositivo_nuevo",
+    "fallas_autenticacion",
+    "ubicacion_inusual",
+    "horario_inusual",
+    "fecha_registro"
+  ],
+  "source_has_no_primary_keys": true,
+  "source_labels_are_not_ground_truth_for_generated_transactions": true
+}

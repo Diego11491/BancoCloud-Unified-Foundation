@@ -1,0 +1,200 @@
+{
+  "status": "OFFLINE_CANDIDATE_NOT_AUTHORIZED",
+  "candidate_model_version": "logreg-temporal-baseline-v1",
+  "online_fallback_model_version": "rules-only-v1",
+  "feature_version": "student-features-v2",
+  "dataset": {
+    "rows": 10000,
+    "positives": 323,
+    "label_sources": {
+      "synthetic_scenario": 10000
+    },
+    "matrix_sha256": "806be4fca3fd8fa64a2d3b481fdf7c562e1f9f9635a8f31b744372c201338c9c"
+  },
+  "split": {
+    "train": {
+      "rows": 7000,
+      "start_time": "2026-01-01T00:00:00+00:00",
+      "end_time": "2026-01-05T20:39:00+00:00",
+      "positives": 226
+    },
+    "validation": {
+      "rows": 1500,
+      "start_time": "2026-01-05T20:40:00+00:00",
+      "end_time": "2026-01-06T21:39:00+00:00",
+      "positives": 49
+    },
+    "test": {
+      "rows": 1500,
+      "start_time": "2026-01-06T21:40:00+00:00",
+      "end_time": "2026-01-07T22:39:00+00:00",
+      "positives": 48
+    }
+  },
+  "leakage_checks": {
+    "forbidden_feature_intersection": [],
+    "labels_joined_only_by_transaction_id": true,
+    "labels_used_only_as_target": true,
+    "random_split_used": false
+  },
+  "model": {
+    "algorithm": "logistic_regression",
+    "class_weight": "balanced",
+    "threshold": 0.5,
+    "feature_names": [
+      "log_amount",
+      "tx_count_1m",
+      "tx_count_5m",
+      "tx_count_1h",
+      "amount_sum_5m",
+      "amount_vs_avg_30d",
+      "amount_vs_avg_30d_missing",
+      "amount_vs_median_30d",
+      "amount_vs_median_30d_missing",
+      "new_device",
+      "new_device_missing",
+      "device_age_days",
+      "device_age_days_missing",
+      "new_beneficiary",
+      "new_beneficiary_missing",
+      "prior_beneficiary_tx_count",
+      "prior_beneficiary_tx_count_missing",
+      "channel_changed",
+      "channel_changed_missing",
+      "hour_deviation",
+      "hour_deviation_missing"
+    ],
+    "top_coefficients": [
+      {
+        "feature": "log_amount",
+        "coefficient": 3.11611
+      },
+      {
+        "feature": "amount_vs_avg_30d",
+        "coefficient": 1.129829
+      },
+      {
+        "feature": "amount_vs_median_30d",
+        "coefficient": 1.129829
+      },
+      {
+        "feature": "device_age_days",
+        "coefficient": -0.541185
+      },
+      {
+        "feature": "device_age_days_missing",
+        "coefficient": 0.541185
+      },
+      {
+        "feature": "prior_beneficiary_tx_count",
+        "coefficient": -0.541185
+      },
+      {
+        "feature": "amount_vs_avg_30d_missing",
+        "coefficient": 0.500131
+      },
+      {
+        "feature": "amount_vs_median_30d_missing",
+        "coefficient": 0.500131
+      },
+      {
+        "feature": "new_device_missing",
+        "coefficient": 0.500131
+      },
+      {
+        "feature": "new_beneficiary_missing",
+        "coefficient": 0.500131
+      },
+      {
+        "feature": "prior_beneficiary_tx_count_missing",
+        "coefficient": 0.500131
+      },
+      {
+        "feature": "new_device",
+        "coefficient": 0.095946
+      }
+    ]
+  },
+  "metrics": {
+    "validation": {
+      "rows": 1500,
+      "positives": 49,
+      "pr_auc": 1.0,
+      "precision": 1.0,
+      "recall": 0.979592,
+      "fpr": 0.0,
+      "brier_score": 0.000231,
+      "confusion_matrix": {
+        "tn": 1451,
+        "fp": 0,
+        "fn": 1,
+        "tp": 48
+      },
+      "calibration_bins": [
+        {
+          "mean_probability": 0.0,
+          "observed_fraction": 0.0
+        },
+        {
+          "mean_probability": 0.0,
+          "observed_fraction": 0.0
+        },
+        {
+          "mean_probability": 2e-06,
+          "observed_fraction": 0.0
+        },
+        {
+          "mean_probability": 1e-05,
+          "observed_fraction": 0.0
+        },
+        {
+          "mean_probability": 0.162116,
+          "observed_fraction": 0.163333
+        }
+      ]
+    },
+    "test": {
+      "rows": 1500,
+      "positives": 48,
+      "pr_auc": 1.0,
+      "precision": 1.0,
+      "recall": 0.979167,
+      "fpr": 0.0,
+      "brier_score": 0.000311,
+      "confusion_matrix": {
+        "tn": 1452,
+        "fp": 0,
+        "fn": 1,
+        "tp": 47
+      },
+      "calibration_bins": [
+        {
+          "mean_probability": 0.0,
+          "observed_fraction": 0.0
+        },
+        {
+          "mean_probability": 0.0,
+          "observed_fraction": 0.0
+        },
+        {
+          "mean_probability": 1e-06,
+          "observed_fraction": 0.0
+        },
+        {
+          "mean_probability": 9e-06,
+          "observed_fraction": 0.0
+        },
+        {
+          "mean_probability": 0.158718,
+          "observed_fraction": 0.16
+        }
+      ]
+    }
+  },
+  "elapsed_seconds": 7.241581,
+  "limitations": [
+    "Labels and transactions are synthetic and scenario-generated.",
+    "The candidate is not integrated into online scoring or authorization.",
+    "Performance does not establish production fraud detection quality."
+  ]
+}

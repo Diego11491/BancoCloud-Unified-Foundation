@@ -1,0 +1,11 @@
+{
+  "policy_version": "student-rules-v2",
+  "feature_version": "student-features-v2",
+  "model_version": "rules-only-v1",
+  "medium_threshold": 0.35,
+  "high_threshold": 0.70,
+  "rule_weights": {"large_amount": 0.35, "new_device": 0.25, "new_beneficiary": 0.20, "rapid_activity": 0.20},
+  "large_amount_pen": 2000,
+  "rapid_window_seconds": 300,
+  "rapid_count": 3
+}

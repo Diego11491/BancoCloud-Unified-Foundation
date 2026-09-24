@@ -1,0 +1,9 @@
+.env
+.git
+__pycache__
+*.pyc
+tests
+docs
+data/quality
+data/synthetic/*
+!data/synthetic/customer_seed.jsonl

@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: bancocloud
+      POSTGRES_USER: bancocloud
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      - ./infra/local/schema.sql:/docker-entrypoint-initdb.d/001.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bancocloud"]
+      interval: 5s
+      retries: 15
+  core:
+    build: .
+    env_file: .env
+    ports: ["127.0.0.1:8080:8000"]
+    depends_on:
+      db: {condition: service_healthy}
+  fraud:
+    build: .
+    command: ["uvicorn", "bancocloud.service:fraud_app", "--host", "0.0.0.0", "--port", "8000"]
+    env_file: .env
+    depends_on:
+      db: {condition: service_healthy}
+  publisher:
+    build: .
+    command: ["python","-m","bancocloud.publisher"]
+    env_file: .env
+    depends_on:
+      db: {condition: service_healthy}
+      fraud: {condition: service_started}
+  replay:
+    profiles: ["tools"]
+    build: .
+    command: ["python", "-m", "bancocloud.replay", "/app/data/synthetic/transaction_events.jsonl", "--expected", "10000"]
+    env_file: .env
+    volumes:
+      - ./data/synthetic/transaction_events.jsonl:/app/data/synthetic/transaction_events.jsonl:ro
+    depends_on:
+      fraud: {condition: service_started}
+  gate:
+    profiles: ["tools"]
+    build: .
+    command: ["python", "-m", "bancocloud.gates", "--expected", "10000"]
+    env_file: .env
+    volumes:
+      - ./data/synthetic/transaction_events.jsonl:/app/data/synthetic/transaction_events.jsonl:ro
+    depends_on:
+      db: {condition: service_healthy}
+volumes:
+  dbdata: {}

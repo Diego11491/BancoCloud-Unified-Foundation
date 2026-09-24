@@ -1,0 +1,18 @@
+flowchart LR
+  subgraph AWS["AWS - Digital Banking Experience"]
+    C[Mobile/Web/ATM/POS] --> W[AWS WAF] --> G[API Gateway] --> I[Cognito] --> B[Lambda BFF]
+  end
+  subgraph OP["ON-PREMISE - Core"]
+    A[Core Banking API] --> R[Critical Inline Rules] --> D[(OLTP)] --> O[Transactional Outbox] --> P[Publisher + Pseudonymization]
+  end
+  subgraph AZ["AZURE - Banking Intelligence"]
+    E[Event Hubs] --> F[Stream Processor] --> S[Rules + ML + Policy]
+    S --> L[LOW log]
+    S --> M[MEDIUM monitor]
+    S --> H[HIGH]
+    H --> Q[Service Bus] --> CS[Case Service] --> DB[(Case/Profile DB)] --> AP[Analyst Portal]
+    DB --> AI[Azure OpenAI] --> AP
+    E --> LA[ADLS Bronze/Silver/Gold] --> SY[Synapse Serverless] --> BI[Power BI]
+  end
+  B --> A
+  P --> E

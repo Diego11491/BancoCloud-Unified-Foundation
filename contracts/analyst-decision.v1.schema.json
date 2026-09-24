@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bancocloud.local/contracts/analyst-decision.v1.schema.json",
+  "title": "AnalystDecision.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "case_id", "transaction_id", "decision", "decided_at", "analyst_ref", "correlation_id"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "case_id": {"type": "string", "format": "uuid"},
+    "transaction_id": {"type": "string", "format": "uuid"},
+    "decision": {"type": "string", "enum": ["CONFIRMED_FRAUD", "LEGITIMATE", "INCONCLUSIVE"]},
+    "decided_at": {"type": "string", "format": "date-time"},
+    "analyst_ref": {"type": "string", "minLength": 8, "maxLength": 128},
+    "notes": {"type": ["string", "null"], "maxLength": 2000},
+    "correlation_id": {"type": "string", "format": "uuid"}
+  }
+}
