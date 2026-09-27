@@ -27,6 +27,11 @@ Una decisión de analista se registra como `AnalystDecision.v1`.
 ### RF-07 Cold path
 Los eventos deben poder aterrizar en Bronze y continuar a Silver/Gold sin participar en el scoring síncrono.
 
+### RF-08 Asistencia GenAI
+Un caso HIGH ya creado puede producir un `GenAICaseSummary.v1` evidence-only. La
+salida debe ser auditable, exigir revisión humana y degradar a fallback local sin
+afectar scoring, case management ni la decisión del analista.
+
 ## Restricciones
 
 - datos sintéticos únicamente;
@@ -44,3 +49,5 @@ Los eventos deben poder aterrizar en Bronze y continuar a Silver/Gold sin partic
 4. Deshabilitar GenAI no rompe el flujo.
 5. Outbox sobrevive a fallo temporal de Event Hubs.
 6. Un build limpio puede ejecutar tests sin credenciales cloud reales.
+7. Una respuesta GenAI inválida o un timeout del proveedor activa fallback y no
+   introduce reason codes ni acciones de decisión.

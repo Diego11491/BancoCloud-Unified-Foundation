@@ -84,14 +84,16 @@ correlación y recuperación del outbox ante la caída del consumidor.
 - [x] Proyectar 10 000 eventos en Bronze local. **LOCAL VERIFIED**
 - [x] Validar y deduplicar 10 000 eventos en Silver con cuarentena local. **LOCAL VERIFIED**
 - [x] Generar Gold local por día/canal y reconciliar conteos. **LOCAL VERIFIED**
+- [ ] Declarar Quarantine privada en ADLS con output y lifecycle policy parametrizada. **LOCAL READY / BICEP VALIDATION PENDING**
 - [ ] Implementar ADLS/Synapse Serverless para el cold path cloud. **CLOUD PENDING**
 - [ ] Crear Power BI sobre Gold; morosidad/rentabilidad requieren fuentes todavía no modeladas. **CLOUD PENDING**
 
 ## T9 — GenAI
 
-- [ ] Implementar evidence-only prompt con versión y referencia del input. **CLOUD PENDING**
-- [ ] Implementar filtrado de PII y pruebas negativas. **CLOUD PENDING**
-- [ ] Demostrar que el fallo del LLM no detiene scoring ni case management. **CLOUD PENDING**
+- [x] Implementar evidence-only prompt con versión, hash del input y contrato de salida. **LOCAL VERIFIED**
+- [x] Implementar rechazo de PII/secrets, reason codes inventados y decisiones prohibidas. **LOCAL VERIFIED**
+- [x] Demostrar por prueba aislada que el fallo del proveedor devuelve fallback y no muta el caso. **LOCAL VERIFIED**
+- [ ] Evaluar un deployment real de Azure OpenAI, calidad, latencia, costo y telemetría. **CLOUD PENDING**
 
 ## T10 — End-to-end
 
@@ -101,9 +103,16 @@ correlación y recuperación del outbox ante la caída del consumidor.
 - [ ] Ejecutar load test gradual 5→20→100 eps solo después de los gates funcionales. **LOCAL PENDING**
 - [ ] Ejecutar smoke cloud y documentar costos/teardown. **CLOUD PENDING**
 
+## T11 — CI/CD
+
+- [ ] Ejecutar en GitHub el workflow de pruebas Python y build/lint Bicep sin credenciales cloud. **LOCAL READY / GITHUB RUN PENDING**
+- [ ] Proteger `main` y exigir el workflow CI antes de merge. **REPOSITORY CONFIG PENDING**
+- [ ] Diseñar CD manual con OIDC, `what-if`, environment protegido, aprobación y teardown. **CLOUD PENDING**
+- [ ] No habilitar despliegue automático por `push` mientras no estén cerrados los gates de seguridad y costo. **GUARDRAIL**
+
 ## Siguiente task exacta
 
-**T5-AZURE-IAC-STATIC-PREFLIGHT:** inventariar el Bicep existente frente a la
-arquitectura canónica, validar su sintaxis localmente y documentar los módulos faltantes,
-costos esperados y estrategia de teardown. No ejecutar despliegues ni crear recursos
-Azure durante esta tarea.
+**T8-QUARANTINE-STATIC-GATE:** compilar y ejecutar lint de `messaging-lite.bicep`
+y `main-lite.bicep`, verificar el output y la lifecycle policy en los JSON generados,
+ejecutar las pruebas locales y subir el cambio para obtener el primer PASS del workflow
+CI. No ejecutar `what-if`, deployment ni crear recursos Azure durante esta tarea.

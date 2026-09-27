@@ -12,7 +12,9 @@ flowchart LR
     S --> H[HIGH]
     H --> Q[Service Bus] --> CS[Case Service] --> DB[(Case/Profile DB)] --> AP[Analyst Portal]
     DB --> AI[Azure OpenAI] --> AP
-    E --> LA[ADLS Bronze/Silver/Gold] --> SY[Synapse Serverless] --> BI[Power BI]
+    E --> BR[ADLS Bronze] --> V{Validación de contrato y calidad}
+    V -->|válido| SI[Silver] --> GO[Gold] --> SY[Synapse Serverless] --> BI[Power BI]
+    V -->|inválido| QU[Quarantine]
   end
   B --> A
   P --> E

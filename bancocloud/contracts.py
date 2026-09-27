@@ -16,6 +16,7 @@ SCHEMAS = {
     "score": "fraud-score.v1.schema.json",
     "case": "create-fraud-case.v1.schema.json",
     "decision": "analyst-decision.v1.schema.json",
+    "genai_summary": "genai-case-summary.v1.schema.json",
 }
 
 
@@ -34,7 +35,8 @@ def _validate_subset(schema, value):
     kinds = [kinds] if isinstance(kinds, str) else kinds
     predicates = {"object":lambda v:isinstance(v,dict), "array":lambda v:isinstance(v,list),
                   "string":lambda v:isinstance(v,str), "number":lambda v:isinstance(v,(int,float)) and not isinstance(v,bool),
-                  "integer":lambda v:isinstance(v,int) and not isinstance(v,bool), "null":lambda v:v is None}
+                  "integer":lambda v:isinstance(v,int) and not isinstance(v,bool),
+                  "boolean":lambda v:isinstance(v,bool), "null":lambda v:v is None}
     if kinds and not any(predicates[k](value) for k in kinds):
         raise ValueError("Invalid schema type")
     if "const" in schema and value != schema["const"]:
@@ -50,6 +52,10 @@ def _validate_subset(schema, value):
         for k,v in value.items():
             if k in fields: _validate_subset(fields[k], v)
     if isinstance(value, list):
+        if len(value) < schema.get("minItems", 0):
+            raise ValueError("Too few array elements")
+        if len(value) > schema.get("maxItems", float("inf")):
+            raise ValueError("Too many array elements")
         if schema.get("uniqueItems") and len({json.dumps(v,sort_keys=True) for v in value}) != len(value):
             raise ValueError("Duplicate array element")
         for v in value: _validate_subset(schema.get("items", {}),v)

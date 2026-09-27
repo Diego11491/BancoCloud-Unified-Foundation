@@ -1,0 +1,62 @@
+name: BancoCloud CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-tests:
+    name: Python tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-ml.txt
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests/unit -p "test_*.py"
+
+      - name: Foundation, boundaries and ML tests
+        run: python -m unittest tests.test_foundation tests.test_service_boundaries tests.test_ml_baseline
+
+      - name: AWS BFF tests
+        run: python -m unittest discover -s tests/aws -p "test_*.py"
+
+  bicep-static:
+    name: Bicep build and lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure Bicep CLI
+        run: az bicep install
+
+      - name: Lint Bicep modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in messaging-lite foundation-lite data-lite apps-lite main-lite; do
+            az bicep lint --file "infra/azure/bicep/${file}.bicep" --no-restore
+          done
+
+      - name: Build Bicep composition root
+        run: az bicep build --file infra/azure/bicep/main-lite.bicep --outfile "${RUNNER_TEMP}/bancocloud-main-lite.json" --no-restore

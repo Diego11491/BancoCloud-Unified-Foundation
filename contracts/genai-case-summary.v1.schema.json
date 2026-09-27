@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bancocloud.local/contracts/genai-case-summary.v1.schema.json",
+  "title": "GenAICaseSummary.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "case_id", "transaction_id", "correlation_id",
+    "input_reference", "prompt_version", "provider", "model",
+    "generation_mode", "fallback_used", "fallback_reason", "generated_at",
+    "summary", "signal_explanations", "missing_information",
+    "recommended_next_steps", "limitations", "human_review_required",
+    "decision_authority"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "case_id": {"type": "string", "format": "uuid"},
+    "transaction_id": {"type": "string", "format": "uuid"},
+    "correlation_id": {"type": "string", "format": "uuid"},
+    "input_reference": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "prompt_version": {"const": "fraud-case-summary-v1"},
+    "provider": {"type": "string", "minLength": 1, "maxLength": 64},
+    "model": {"type": "string", "minLength": 1, "maxLength": 128},
+    "generation_mode": {
+      "enum": ["LOCAL_DETERMINISTIC", "MODEL_ASSISTED", "MODEL_FALLBACK"]
+    },
+    "fallback_used": {"type": "boolean"},
+    "fallback_reason": {
+      "type": ["string", "null"],
+      "enum": [null, "provider_error", "invalid_model_output"]
+    },
+    "generated_at": {"type": "string", "format": "date-time"},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 1000},
+    "signal_explanations": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "explanation"],
+        "properties": {
+          "code": {"type": "string", "minLength": 1, "maxLength": 100},
+          "explanation": {"type": "string", "minLength": 1, "maxLength": 500}
+        }
+      }
+    },
+    "missing_information": {
+      "type": "array", "maxItems": 10,
+      "items": {"type": "string", "minLength": 1, "maxLength": 300}
+    },
+    "recommended_next_steps": {
+      "type": "array", "maxItems": 10,
+      "items": {"type": "string", "minLength": 1, "maxLength": 300}
+    },
+    "limitations": {
+      "type": "array", "minItems": 1, "maxItems": 10,
+      "items": {"type": "string", "minLength": 1, "maxLength": 300}
+    },
+    "human_review_required": {"const": true},
+    "decision_authority": {"const": "HUMAN_ANALYST"}
+  }
+}

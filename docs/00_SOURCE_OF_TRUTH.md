@@ -297,6 +297,9 @@ No puede:
 - reemplazar la decisión humana.
 
 Toda salida GenAI debe conservar `prompt_version`, modelo, timestamp y referencia del input.
+La salida se valida mediante `GenAICaseSummary.v1`, exige revisión humana y usa como
+evidencia únicamente un `CreateFraudCase.v1` ya creado. El modo local determinista y
+el fallback por fallo del proveedor se identifican explícitamente.
 
 ---
 
@@ -357,10 +360,14 @@ Objetivo: segundos y trazabilidad de punta a punta.
 ### 11.2 Cold path
 
 ```text
-Event Hubs → ADLS Bronze → Silver → Gold → Synapse → Power BI / ML
+Event Hubs → ADLS Bronze → validación → Silver → Gold → Synapse → Power BI / ML
 ```
 
 Bronze conserva eventos inmutables; Silver limpia/deduplica/normaliza; Gold publica datasets de negocio y modelado.
+Los registros inválidos se desvían desde la validación a una zona lateral
+`Quarantine`; no constituye una cuarta capa Medallion. Debe guardar motivo de
+rechazo y referencia al input, tener acceso privado y retención limitada, y no
+alimentar Power BI ni ML hasta ser corregida y reprocesada.
 
 El hot path **no espera** Bronze→Silver→Gold para puntuar.
 

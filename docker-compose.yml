@@ -49,5 +49,11 @@ services:
       - ./data/synthetic/transaction_events.jsonl:/app/data/synthetic/transaction_events.jsonl:ro
     depends_on:
       db: {condition: service_healthy}
+  genai:
+    profiles: ["tools"]
+    build: .
+    command: ["uvicorn", "bancocloud.api.genai:app", "--host", "0.0.0.0", "--port", "8000"]
+    env_file: .env
+    ports: ["127.0.0.1:8082:8000"]
 volumes:
   dbdata: {}

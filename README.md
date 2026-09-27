@@ -69,3 +69,28 @@ La arquitectura está **congelada a nivel lógico**. La implementación LOCAL FI
 3. Consultar los manuales [Azure](docs/deployment/02_AZURE_STUDENT_LITE.md), [AWS](docs/deployment/03_AWS_STUDENT_LITE.md) y [evidencia/operación](docs/deployment/04_OPERATIONS_AND_EVIDENCE.md) antes de crear recursos.
 
 El código Python vive en `bancocloud/`; `data/generator/` genera los datos. Los JSON Schema solo viven en `contracts/`. `config/policy.v1.json` controla los umbrales de demo. `docker-compose.yml` inicia PostgreSQL, core, consumidor y publicador, sin servicios externos. Los perfiles `replay` y `gate` se ejecutan solo a pedido. No se usa Git ni se conecta un repositorio para esta fase.
+
+## Probar la asistencia GenAI local
+
+GenAI es un servicio opcional y aislado. No requiere un modelo ni credenciales en
+modo local y nunca interviene en scoring, creación de casos o autorización.
+
+```powershell
+docker compose --profile tools up -d --build genai
+Invoke-RestMethod -Method Get -Uri http://127.0.0.1:8082/health
+```
+
+Para `POST /explain-case`, enviar el header `x-demo-key` y un JSON con `case_id`
+más `evidence`, donde `evidence` cumple `CreateFraudCase.v1`. La respuesta se
+valida contra `GenAICaseSummary.v1` y queda marcada como asistencia con revisión
+humana obligatoria. Las variables `GENAI_*` de `.env.example` permiten conectar
+más adelante un endpoint HTTPS OpenAI-compatible; si se dejan vacías se usa el
+fallback determinista local.
+
+## Integración continua
+
+`.github/workflows/ci.yml` ejecuta las pruebas Python y la validación estática de
+los cinco módulos Bicep en cada `push` o pull request a `main`. Este workflow es
+CI únicamente: no inicia sesión en Azure, no usa secretos cloud y no despliega
+recursos. El CD se añadirá en un workflow separado después de aprobar OIDC,
+`what-if`, environment protegido, costo y teardown.

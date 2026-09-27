@@ -25,6 +25,11 @@ param expiry string
 @maxValue(1)
 param logDailyQuotaGb int = 1
 
+@description('Days to retain rejected records in the quarantine container')
+@minValue(1)
+@maxValue(90)
+param quarantineRetentionDays int = 30
+
 @description('Keep false in the disposable Student environment')
 param enablePurgeProtection bool = false
 
@@ -44,6 +49,7 @@ module messaging './messaging-lite.bicep' = {
     location: location
     owner: owner
     expiry: expiry
+    quarantineRetentionDays: quarantineRetentionDays
   }
 }
 
@@ -78,6 +84,8 @@ output eventHubName string = messaging.outputs.eventHubName
 output serviceBusNamespaceName string = messaging.outputs.serviceBusNamespaceName
 output highFraudQueueName string = messaging.outputs.queueName
 output storageAccountName string = messaging.outputs.storageAccountName
+output quarantineContainerName string = messaging.outputs.quarantineContainerName
+output quarantineRetentionDaysApplied int = messaging.outputs.quarantineRetentionDaysApplied
 
 output workloadIdentityId string = foundation.outputs.workloadIdentityId
 output workloadIdentityClientId string = foundation.outputs.workloadIdentityClientId

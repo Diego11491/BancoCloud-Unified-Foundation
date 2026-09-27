@@ -69,5 +69,25 @@ class FoundationTests(unittest.TestCase):
             result = project(source,Path(temp)/"lake")
             self.assertEqual(result,{"bronze":3,"silver":1,"quarantine":1,"duplicate":1})
 
+    def test_quarantine_is_declared_as_a_private_lake_side_zone(self):
+        messaging = (ROOT / "infra/azure/bicep/messaging-lite.bicep").read_text()
+        main = (ROOT / "infra/azure/bicep/main-lite.bicep").read_text()
+        self.assertIn("resource quarantine", messaging)
+        self.assertIn("name: 'quarantine'", messaging)
+        self.assertIn("properties: { publicAccess: 'None' }", messaging)
+        self.assertIn("delete-expired-quarantine", messaging)
+        self.assertIn("prefixMatch", messaging)
+        self.assertIn("'quarantine/'", messaging)
+        self.assertIn("output quarantineContainerName", messaging)
+        self.assertIn("messaging.outputs.quarantineContainerName", main)
+
+    def test_ci_validates_without_cloud_deployment(self):
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
+        self.assertIn("python -m unittest", workflow)
+        self.assertIn("az bicep lint", workflow)
+        self.assertIn("az bicep build", workflow)
+        self.assertNotIn("azure/login", workflow)
+        self.assertNotIn("az deployment", workflow)
+
 
 if __name__ == "__main__": unittest.main()
