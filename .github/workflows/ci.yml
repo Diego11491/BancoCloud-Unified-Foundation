@@ -17,19 +17,22 @@ concurrency:
 jobs:
   python-tests:
     name: Python tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
           cache: pip
 
       - name: Install dependencies
         run: pip install -r requirements.txt -r requirements-ml.txt
+
+      - name: Validate Docker Compose
+        run: cp .env.example .env && docker compose config --quiet
 
       - name: Unit tests
         run: python -m unittest discover -s tests/unit -p "test_*.py"
@@ -42,10 +45,10 @@ jobs:
 
   bicep-static:
     name: Bicep build and lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Ensure Bicep CLI
         run: az bicep install

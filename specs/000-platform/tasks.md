@@ -42,6 +42,7 @@ correlación y recuperación del outbox ante la caída del consumidor.
 - [x] Demostrar `Transaction + OutboxEvent` en el mismo commit y ausencia de transacciones sin outbox. **LOCAL VERIFIED**
 - [x] Detener el consumidor, comprobar un outbox pendiente y verificar drenado a cero al recuperarlo. **LOCAL VERIFIED**
 - [x] Ejecutar publisher y replay dos veces sin duplicar scores ni casos. **LOCAL VERIFIED**
+- [ ] Arrancar el Core modular desde Docker y ejecutar automáticamente la migración idempotente 002 antes del servicio. **LOCAL READY / DOCKER VALIDATION PENDING**
 
 ## T4 — Fraud engine local
 
@@ -78,13 +79,14 @@ correlación y recuperación del outbox ante la caída del consumidor.
 - [ ] Implementar Cognito. **CLOUD PENDING**
 - [ ] Implementar API Gateway HTTP API. **CLOUD PENDING**
 - [ ] Implementar Lambda BFF sin escribir directamente en el OLTP. **ADR BLOCKED**
+- [x] Alinear el nombre del handler `transfers.py` con la referencia SAM y probar el rechazo sin idempotency key. **LOCAL VERIFIED**
 
 ## T8 — Cold path/BI
 
 - [x] Proyectar 10 000 eventos en Bronze local. **LOCAL VERIFIED**
 - [x] Validar y deduplicar 10 000 eventos en Silver con cuarentena local. **LOCAL VERIFIED**
 - [x] Generar Gold local por día/canal y reconciliar conteos. **LOCAL VERIFIED**
-- [ ] Declarar Quarantine privada en ADLS con output y lifecycle policy parametrizada. **LOCAL READY / BICEP VALIDATION PENDING**
+- [x] Declarar Quarantine privada en ADLS con output y lifecycle policy parametrizada. **LOCAL VERIFIED — BUILD/LINT PASS 27/09/2026**
 - [ ] Implementar ADLS/Synapse Serverless para el cold path cloud. **CLOUD PENDING**
 - [ ] Crear Power BI sobre Gold; morosidad/rentabilidad requieren fuentes todavía no modeladas. **CLOUD PENDING**
 
@@ -105,14 +107,14 @@ correlación y recuperación del outbox ante la caída del consumidor.
 
 ## T11 — CI/CD
 
-- [ ] Ejecutar en GitHub el workflow de pruebas Python y build/lint Bicep sin credenciales cloud. **LOCAL READY / GITHUB RUN PENDING**
+- [x] Ejecutar en GitHub el workflow de pruebas Python y build/lint Bicep sin credenciales cloud. **CI VERIFIED — RUN #1 PASS 27/09/2026**
 - [ ] Proteger `main` y exigir el workflow CI antes de merge. **REPOSITORY CONFIG PENDING**
 - [ ] Diseñar CD manual con OIDC, `what-if`, environment protegido, aprobación y teardown. **CLOUD PENDING**
 - [ ] No habilitar despliegue automático por `push` mientras no estén cerrados los gates de seguridad y costo. **GUARDRAIL**
 
 ## Siguiente task exacta
 
-**T8-QUARANTINE-STATIC-GATE:** compilar y ejecutar lint de `messaging-lite.bicep`
-y `main-lite.bicep`, verificar el output y la lifecycle policy en los JSON generados,
-ejecutar las pruebas locales y subir el cambio para obtener el primer PASS del workflow
-CI. No ejecutar `what-if`, deployment ni crear recursos Azure durante esta tarea.
+**T3-MODULAR-CORE-DOCKER-GATE:** validar `docker compose config`, recrear `core`
+con el entrypoint modular, comprobar que `migrate` termina en exit code 0 y ejecutar
+health, listado de cuentas/productos, transferencia idempotente y consulta de casos.
+No borrar el volumen ni crear recursos cloud durante esta tarea.

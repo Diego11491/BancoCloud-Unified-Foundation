@@ -52,8 +52,13 @@ def run(transfer_only=False):
         print(json.dumps({"transfer":result,"idempotency":"PASS"}))
         return result
     for _ in range(3): send(payload)
-    high = send({**payload,"amount":"3000.00","device_ref":"new-smoke-device",
-                 "beneficiary_ref":"new-smoke-beneficiary"})
+    run_marker = uuid4().hex
+    high = send({
+        **payload,
+        "amount":"3000.00",
+        "device_ref": f"new-smoke-device-{run_marker}",
+        "beneficiary_ref": f"new-smoke-beneficiary-{run_marker}",
+    })
     for _ in range(30):
         cases = request("/cases",key)
         matched = [c for c in cases if c["evidence"]["transaction_id"] == high["transaction_id"]]

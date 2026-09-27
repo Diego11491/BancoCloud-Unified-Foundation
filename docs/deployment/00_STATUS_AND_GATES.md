@@ -40,12 +40,12 @@ El PASS local no equivale a despliegue cloud ni autoriza a exponer el Core a Int
 |---|---|---|
 | 0 Arquitectura | Fuente de verdad y ADR-0001/0002 preservados | Aceptación del equipo pendiente |
 | 1 Datos/contratos | Excel revalidado por hash; 5960 perfiles; 10k eventos; etiquetas separadas; cuatro schemas usados; 0 rechazo en reproyección local | Verificar el escenario de datos con el equipo, calidad y representatividad; no interpretar etiquetas generadas como fraude real |
-| 2 Core/outbox | Gate Docker completado: transferencia, idempotencia, outbox ACID, publisher, replay y recuperación ante caída | PASS local; conservar evidencia y no reutilizar autenticación demo fuera del laboratorio |
+| 2 Core/outbox | Gate Docker legacy completado; entrypoint modular y migración automática declarados con regresión estática | Revalidar Docker modular: migrate=Exited(0), cuentas/productos, transferencia, casos, outbox y recuperación; no reutilizar autenticación demo fuera del laboratorio |
 | 3 Azure hot path | Enrichment v2 probado a nivel unitario y Docker; rules/policy locales con 10 000 scores versionados y 93 casos idempotentes; adaptadores cloud deshabilitados | Baseline ML local y fuentes gobernadas pendientes, además de Event Hubs, Container Apps, Azure SQL y Service Bus; Bicep de messaging parcial; `what-if` pendiente |
-| 4 Cold path | Bronze/Silver/Gold local, cuarentena y reconciliación; Quarantine privada y lifecycle declaradas en Bicep | Build/lint del cambio, ADLS ingestion, vistas Synapse y Power BI pendientes; BI de morosidad/rentabilidad exige fuentes de préstamos/costos aún no modeladas |
+| 4 Cold path | Bronze/Silver/Gold local, cuarentena y reconciliación; Quarantine privada y lifecycle declaradas; build/lint PASS | ADLS ingestion, vistas Synapse y Power BI pendientes; BI de morosidad/rentabilidad exige fuentes de préstamos/costos aún no modeladas |
 | 5 AWS | Contrato core disponible para BFF; interfaz AWS→core deshabilitada | Cognito, API Gateway, Lambda, S3/CloudFront y método seguro AWS→core pendientes; no exponer el core local por Internet sin diseño aprobado |
 | 6 Analistas/GenAI | Registro de decisión humana por contrato | Staff IAM, portal y resumen asistido pendientes; GenAI no bloquea casos |
-| 7 IaC/CI | Módulos Bicep y workflow CI sin credenciales declarados | Ejecutar GitHub Actions, `what-if`, SAM, OIDC y scans pendientes; CI no despliega recursos |
+| 7 IaC/CI | Módulos Bicep y GitHub Actions Run #1 PASS: Python tests + Bicep build/lint sin credenciales | `what-if`, SAM, OIDC y scans pendientes; CI no despliega recursos |
 | 8/9 Resiliencia/demo | Unitarios, reconciliación, replay real, smoke y recuperación del consumidor ejecutados | Métricas bajo carga, nube y teardown cloud pendientes |
 
 **Regla de liberación:** el código local no equivale a despliegue bancario ni a entorno cloud operativo. Ningún recurso cloud se crea sin pasar validación local, preview de IaC, decisión de región/cuota y estrategia de apagado.

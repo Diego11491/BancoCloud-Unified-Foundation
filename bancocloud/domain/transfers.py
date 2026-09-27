@@ -31,4 +31,5 @@ class TransferCommand:
             "device_ref": self.device_ref,
             "beneficiary_ref": self.beneficiary_ref,
         }
-        return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        # Preserve the legacy Core serialization so retries remain valid across the modular cutover.
+        return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()

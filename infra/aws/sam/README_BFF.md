@@ -10,7 +10,8 @@ Local Core modular entrypoint:
 uvicorn bancocloud.api.core:app --host 127.0.0.1 --port 8080
 ```
 
-Apply the additive database migration before using cards/loans:
+Docker Compose applies the additive cards/loans migration automatically before
+the modular Core starts. Without Compose, apply it manually:
 
 ```bash
 psql "$DATABASE_URL" -f infra/local/migrations/002_cards_loans.sql

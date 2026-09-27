@@ -4,10 +4,12 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from bancocloud.api.dependencies import require_demo_key
 from bancocloud.api.schemas.accounts import OnboardingRequest
 from bancocloud.api.schemas.cards import CardPurchaseRequest
+from bancocloud.api.schemas.cases import AnalystDecisionRequest
 from bancocloud.api.schemas.loans import LoanApplicationRequest
 from bancocloud.api.schemas.transfers import TransferRequest
 from bancocloud.application.accounts_service import AccountsService
 from bancocloud.application.cards_service import CardsService
+from bancocloud.application.cases_service import CaseContractError, CaseReferenceError, CasesService
 from bancocloud.application.loans_service import LoansService
 from bancocloud.application.onboarding_service import OnboardingService
 from bancocloud.application.transfers_service import TransfersService
@@ -18,6 +20,7 @@ from bancocloud.domain.transfers import TransferCommand, TransferError
 from bancocloud.infrastructure.postgres.connection import connect
 from bancocloud.infrastructure.postgres.repositories.accounts import PostgresAccountRepository
 from bancocloud.infrastructure.postgres.repositories.cards import PostgresCardRepository
+from bancocloud.infrastructure.postgres.repositories.cases import PostgresCaseRepository
 from bancocloud.infrastructure.postgres.repositories.loans import PostgresLoanRepository
 from bancocloud.infrastructure.postgres.repositories.onboarding import PostgresOnboardingRepository
 from bancocloud.infrastructure.postgres.repositories.transactions import PostgresTransactionRepository
@@ -27,6 +30,7 @@ _secure = [Depends(require_demo_key)]
 
 accounts_service = AccountsService(PostgresAccountRepository())
 cards_service = CardsService(PostgresCardRepository())
+cases_service = CasesService(PostgresCaseRepository())
 loans_service = LoansService(PostgresLoanRepository())
 onboarding_service = OnboardingService(PostgresOnboardingRepository())
 transfers_service = TransfersService(PostgresTransactionRepository())
@@ -39,7 +43,7 @@ def health():
 
 
 @app.get("/accounts", dependencies=_secure)
-def accounts(customer_ref: UUID):
+def accounts(customer_ref: UUID | None = None):
     return accounts_service.list_accounts(customer_ref)
 
 
@@ -76,6 +80,21 @@ def apply_loan(request: LoanApplicationRequest):
     try: return loans_service.apply(request.account_ref, request.amount, request.term_months, request.monthly_income)
     except LookupError as exc: raise HTTPException(404, str(exc)) from exc
     except (LoanError, ValueError) as exc: raise HTTPException(400, str(exc)) from exc
+
+
+@app.get("/cases", dependencies=_secure)
+def cases(limit: int = 100):
+    return cases_service.list_cases(limit)
+
+
+@app.post("/cases/{case_id}/decision", dependencies=_secure)
+def decide(case_id: UUID, request: AnalystDecisionRequest):
+    try:
+        return cases_service.record_decision(case_id, request.model_dump(mode="json"))
+    except CaseContractError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except CaseReferenceError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 @app.post("/transfers", dependencies=_secure)

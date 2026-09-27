@@ -66,5 +66,16 @@ class BoundaryTests(unittest.TestCase):
         with self.assertRaises(CloudAdapterDisabled): AzureServiceBusCaseSink().publish_high_case({})
         with self.assertRaises(CloudAdapterDisabled): AwsDigitalCoreGateway().send_transfer({})
 
+    def test_compose_runs_idempotent_product_migration_before_modular_core(self):
+        compose = (ROOT / "docker-compose.yml").read_text()
+        dockerfile = (ROOT / "Dockerfile").read_text()
+        migration = (ROOT / "infra/local/migrations/002_cards_loans.sql").read_text()
+        self.assertIn("002_cards_loans.sql:/docker-entrypoint-initdb.d/002_cards_loans.sql:ro", compose)
+        self.assertIn("migrate:", compose)
+        self.assertIn("service_completed_successfully", compose)
+        self.assertIn("bancocloud.api.core:app", dockerfile)
+        self.assertIn("CREATE TABLE IF NOT EXISTS cards", migration)
+        self.assertIn("CREATE TABLE IF NOT EXISTS loans", migration)
+
 
 if __name__ == "__main__": unittest.main()

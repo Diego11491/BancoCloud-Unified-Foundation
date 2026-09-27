@@ -13,6 +13,15 @@ class PostgresAccountRepository:
             ).fetchall()
         return [Account(r[0], r[1], Decimal(r[2]), r[3]) for r in rows]
 
+    def list_all(self, limit: int = 10) -> list[Account]:
+        limit = max(1, min(int(limit), 100))
+        with connect() as conn:
+            rows = conn.execute(
+                "SELECT account_ref,customer_ref,balance,status FROM accounts ORDER BY account_ref LIMIT %s",
+                (limit,),
+            ).fetchall()
+        return [Account(r[0], r[1], Decimal(r[2]), r[3]) for r in rows]
+
     def movements(self, account_ref: UUID, limit: int = 50) -> list[dict]:
         limit = max(1, min(int(limit), 100))
         with connect() as conn:

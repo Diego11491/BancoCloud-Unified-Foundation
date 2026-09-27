@@ -68,7 +68,11 @@ La arquitectura está **congelada a nivel lógico**. La implementación LOCAL FI
 2. Ejecutar el [manual de servicios y gates LOCAL FIRST](docs/deployment/05_SERVICES_AND_RUNBOOK.md). El ZIP incluye perfiles y 10 000 eventos sintéticos derivados del Excel; también permite regenerarlos desde el original.
 3. Consultar los manuales [Azure](docs/deployment/02_AZURE_STUDENT_LITE.md), [AWS](docs/deployment/03_AWS_STUDENT_LITE.md) y [evidencia/operación](docs/deployment/04_OPERATIONS_AND_EVIDENCE.md) antes de crear recursos.
 
-El código Python vive en `bancocloud/`; `data/generator/` genera los datos. Los JSON Schema solo viven en `contracts/`. `config/policy.v1.json` controla los umbrales de demo. `docker-compose.yml` inicia PostgreSQL, core, consumidor y publicador, sin servicios externos. Los perfiles `replay` y `gate` se ejecutan solo a pedido. No se usa Git ni se conecta un repositorio para esta fase.
+El código Python vive en `bancocloud/`; `data/generator/` genera los datos. Los JSON Schema solo viven en `contracts/`. `config/policy.v1.json` controla los umbrales de demo. `docker-compose.yml` inicia PostgreSQL, core, consumidor y publicador, sin servicios externos. Los perfiles `replay` y `gate` se ejecutan solo a pedido. GitHub Actions valida pruebas y Bicep, pero no despliega recursos cloud.
+
+El Core de Docker usa la API modular `bancocloud.api.core:app`. Compose aplica
+automáticamente la migración idempotente de tarjetas/préstamos mediante el servicio
+efímero `migrate` antes de iniciar el Core, tanto sobre volúmenes nuevos como existentes.
 
 ## Probar la asistencia GenAI local
 

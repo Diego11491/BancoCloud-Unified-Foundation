@@ -6,8 +6,8 @@ Fuente de verdad: `../00_SOURCE_OF_TRUTH.md`. Esta fase prepara los servicios y 
 
 | Servicio | Archivo principal | Estado de código | Gate en tu PC |
 |---|---|---|---|
-| PostgreSQL OLTP | `infra/local/schema.sql`, `docker-compose.yml` | Preparado | Healthy, 5960 cuentas sembradas |
-| Core API + outbox ACID | `bancocloud/service.py` (`core_app`) | Preparado | Transferencia e idempotencia, un outbox por transacción |
+| PostgreSQL OLTP | `infra/local/schema.sql`, `infra/local/migrations/002_cards_loans.sql`, `docker-compose.yml` | Preparado | Healthy, migración automática y 5960 cuentas sembradas |
+| Core API modular + outbox ACID | `bancocloud/api/core.py` (`app`) | Preparado | Cuentas, tarjetas, préstamos, transferencia e idempotencia |
 | Publicador con reintentos | `bancocloud/publisher.py`, `bancocloud/adapters.py` | Preparado | Outbox retenido cuando fraud se detiene; entregado al reanudar |
 | Clasificador local | `bancocloud/service.py` (`fraud_app`), `bancocloud/engine.py`, `config/policy.v1.json` | Preparado | 10 000 scores para 10 000 eventos sintéticos |
 | Casos HIGH y decisión | `bancocloud/service.py`, `contracts/` | Preparado para emulación local | Solo HIGH crea caso, replay no lo duplica |
@@ -18,7 +18,7 @@ Fuente de verdad: `../00_SOURCE_OF_TRUTH.md`. Esta fase prepara los servicios y 
 
 ## Empaquetado y configuración
 
-Hay **un Dockerfile** compartido por `core`, `fraud`, `publisher`, `replay` y `gate`: misma versión de contratos y dependencias, distinto comando por servicio. `docker-compose.yml` arranca cuatro contenedores persistentes (`db`, `core`, `fraud`, `publisher`). `replay` y `gate` son tareas efímeras bajo el perfil `tools` y no se inician en `up`. Solo el core publica el puerto local `127.0.0.1:8080`; `fraud` y PostgreSQL no tienen puertos del host.
+Hay **un Dockerfile** compartido por `core`, `fraud`, `publisher`, `replay` y `gate`: misma versión de contratos y dependencias, distinto comando por servicio. `docker-compose.yml` arranca cuatro contenedores persistentes (`db`, `core`, `fraud`, `publisher`) y ejecuta `migrate` como tarea efímera antes del Core. En un volumen nuevo PostgreSQL también aplica `001.sql` y `002_cards_loans.sql` en orden; en uno existente `migrate` vuelve a ejecutar la migración idempotente. `replay`, `gate` y `genai` se inician solo a pedido. Solo el core publica el puerto local `127.0.0.1:8080`; `fraud` y PostgreSQL no tienen puertos del host.
 
 `.env.example` enumera variables; `python scripts/init_env.py` crea `.env` privado con claves nuevas. **No copies las claves del ejemplo ni subas `.env`**. `POSTGRES_PASSWORD` y `DATABASE_URL` se generan de manera coherente. `EVENT_SINK=local-http` impide escoger un adaptador cloud por error. No se incluyen credenciales AWS/Azure.
 
@@ -33,7 +33,9 @@ py -3.12 scripts\init_env.py
 docker compose config --quiet
 docker compose up --build -d db core fraud publisher
 docker compose ps
+docker compose ps -a migrate
 docker compose run --rm core python -m bancocloud.seed_db data/synthetic/customer_seed.jsonl
+docker compose run --rm core python -m bancocloud.seed_products data/synthetic/customer_seed.jsonl
 docker compose exec -T db psql -U bancocloud -d bancocloud -tAc "SELECT count(*) FROM accounts;"
 docker compose run --rm replay
 docker compose run --rm replay
@@ -41,7 +43,7 @@ py -3.12 scripts\smoke_local.py
 docker compose run --rm gate
 ```
 
-Resultados esperados: `accounts=5960`; primera pasada de `replay`: `accepted=10000`, `replayed=0`; segunda: `accepted=0`, `replayed=10000`. `smoke_local.py` debe mostrar tres PASS e imprimir solo IDs técnicos. `gate` exige `fixture_events=10000`, `fixture_scores=10000`, casos HIGH iguales a scores HIGH, casos MEDIUM=0, correlación válida y outbox drenado. Si un gate falla, el comando devuelve exit code 1; revisar logs y el JSON de conteos antes de avanzar.
+Resultados esperados: `migrate` aparece como `Exited (0)`, `accounts=5960`, productos sintéticos disponibles; primera pasada de `replay`: `accepted=10000`, `replayed=0`; segunda: `accepted=0`, `replayed=10000`. `smoke_local.py` debe mostrar tres PASS e imprimir solo IDs técnicos. `gate` exige `fixture_events=10000`, `fixture_scores=10000`, casos HIGH iguales a scores HIGH, casos MEDIUM=0, correlación válida y outbox drenado. Si un gate falla, el comando devuelve exit code 1; revisar logs y el JSON de conteos antes de avanzar.
 
 Si ya existe `.env`, `init_env.py` se detiene sin cambiarlo. Si ya sembraste cuentas, `seed_db.py` no restaura saldos: las repeticiones del seed respetan las cuentas existentes. El replay de eventos usa IDs fijos, así que puede repetirse sin duplicar scores/casos.
 

@@ -8,16 +8,28 @@ services:
     volumes:
       - dbdata:/var/lib/postgresql/data
       - ./infra/local/schema.sql:/docker-entrypoint-initdb.d/001.sql:ro
+      - ./infra/local/migrations/002_cards_loans.sql:/docker-entrypoint-initdb.d/002_cards_loans.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U bancocloud"]
       interval: 5s
       retries: 15
+  migrate:
+    image: postgres:16
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    command: ["psql", "-h", "db", "-U", "bancocloud", "-d", "bancocloud", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/002_cards_loans.sql"]
+    volumes:
+      - ./infra/local/migrations/002_cards_loans.sql:/migrations/002_cards_loans.sql:ro
+    depends_on:
+      db: {condition: service_healthy}
+    restart: "no"
   core:
     build: .
     env_file: .env
     ports: ["127.0.0.1:8080:8000"]
     depends_on:
       db: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
   fraud:
     build: .
     command: ["uvicorn", "bancocloud.service:fraud_app", "--host", "0.0.0.0", "--port", "8000"]

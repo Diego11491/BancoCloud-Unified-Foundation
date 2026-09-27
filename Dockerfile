@@ -10,4 +10,4 @@ COPY data/generator data/generator
 COPY data/synthetic/customer_seed.jsonl data/synthetic/customer_seed.jsonl
 COPY infra/local/schema.sql infra/local/schema.sql
 ENV PYTHONPATH=/app
-CMD ["uvicorn","bancocloud.service:core_app","--host","0.0.0.0","--port","8000"]
+CMD ["uvicorn","bancocloud.api.core:app","--host","0.0.0.0","--port","8000"]
