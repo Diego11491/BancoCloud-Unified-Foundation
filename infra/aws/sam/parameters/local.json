@@ -1,0 +1,6 @@
+{
+  "CoreBaseUrl": "http://host.docker.internal:8080",
+  "CoreApiKey": "replace-local-only",
+  "CognitoIssuer": "https://example.invalid/local",
+  "CognitoAudience": "local-client"
+}

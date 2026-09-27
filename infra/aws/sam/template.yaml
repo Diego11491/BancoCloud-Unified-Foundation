@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: BancoCloud AWS Digital Banking BFF - additive serverless layer
+
+Parameters:
+  CoreBaseUrl:
+    Type: String
+  CoreApiKey:
+    Type: String
+    NoEcho: true
+  CognitoIssuer:
+    Type: String
+  CognitoAudience:
+    Type: String
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 8
+    MemorySize: 256
+    Architectures: [arm64]
+    Environment:
+      Variables:
+        CORE_BASE_URL: !Ref CoreBaseUrl
+        CORE_API_KEY: !Ref CoreApiKey
+
+Resources:
+  DigitalApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Auth:
+        Authorizers:
+          CognitoJwt:
+            IdentitySource: '$request.header.Authorization'
+            JwtConfiguration:
+              issuer: !Ref CognitoIssuer
+              audience: [!Ref CognitoAudience]
+        DefaultAuthorizer: CognitoJwt
+
+  AccountsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../../
+      Handler: src.aws.bff.handlers.accounts.handler
+      Events:
+        Accounts:
+          Type: HttpApi
+          Properties: {ApiId: !Ref DigitalApi, Path: /accounts, Method: GET}
+        Movements:
+          Type: HttpApi
+          Properties: {ApiId: !Ref DigitalApi, Path: /accounts/{account_ref}/movements, Method: GET}
+
+  CardsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../../
+      Handler: src.aws.bff.handlers.cards.handler
+      Events:
+        Cards: {Type: HttpApi, Properties: {ApiId: !Ref DigitalApi, Path: /cards, Method: GET}}
+        Purchase: {Type: HttpApi, Properties: {ApiId: !Ref DigitalApi, Path: /cards/purchase, Method: POST}}
+
+  LoansFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../../
+      Handler: src.aws.bff.handlers.loans.handler
+      Events:
+        Loans: {Type: HttpApi, Properties: {ApiId: !Ref DigitalApi, Path: /loans, Method: GET}}
+        Apply: {Type: HttpApi, Properties: {ApiId: !Ref DigitalApi, Path: /loans/apply, Method: POST}}
+
+  TransfersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../../
+      Handler: src.aws.bff.handlers.transfers.handler
+      Events:
+        Transfer: {Type: HttpApi, Properties: {ApiId: !Ref DigitalApi, Path: /transfers, Method: POST}}
+
+  OnboardingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../../
+      Handler: src.aws.bff.handlers.onboarding.handler
+      Events:
+        Onboarding:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DigitalApi
+            Path: /onboarding
+            Method: POST
+            Auth: {Authorizer: NONE}
+
+  HealthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../../
+      Handler: src.aws.bff.handlers.health.handler
+      Events:
+        Health:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DigitalApi
+            Path: /health
+            Method: GET
+            Auth: {Authorizer: NONE}

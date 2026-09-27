@@ -1,0 +1,8 @@
+from typing import Protocol
+from uuid import UUID
+from bancocloud.domain.accounts import Account
+
+
+class AccountRepository(Protocol):
+    def list_by_customer(self, customer_ref: UUID) -> list[Account]: ...
+    def movements(self, account_ref: UUID, limit: int = 50) -> list[dict]: ...
