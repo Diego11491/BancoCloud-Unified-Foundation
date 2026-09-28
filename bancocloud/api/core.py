@@ -1,6 +1,8 @@
 from uuid import UUID
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
+from bancocloud.api.cors import allowed_origins
 from bancocloud.api.dependencies import require_demo_key
 from bancocloud.api.schemas.accounts import OnboardingRequest
 from bancocloud.api.schemas.cards import CardPurchaseRequest
@@ -26,6 +28,13 @@ from bancocloud.infrastructure.postgres.repositories.onboarding import PostgresO
 from bancocloud.infrastructure.postgres.repositories.transactions import PostgresTransactionRepository
 
 app = FastAPI(title="BancoCloud Core Modular LOCAL FIRST", docs_url=None, redoc_url=None)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins(),
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Accept", "Content-Type", "Idempotency-Key", "X-Demo-Key"],
+)
 _secure = [Depends(require_demo_key)]
 
 accounts_service = AccountsService(PostgresAccountRepository())

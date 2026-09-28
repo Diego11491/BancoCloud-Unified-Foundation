@@ -22,6 +22,43 @@ Hay **un Dockerfile** compartido por `core`, `fraud`, `publisher`, `replay` y `g
 
 `.env.example` enumera variables; `python scripts/init_env.py` crea `.env` privado con claves nuevas. **No copies las claves del ejemplo ni subas `.env`**. `POSTGRES_PASSWORD` y `DATABASE_URL` se generan de manera coherente. `EVENT_SINK=local-http` impide escoger un adaptador cloud por error. No se incluyen credenciales AWS/Azure.
 
+## Conectividad con React Native / Expo
+
+El Core mantiene una postura segura por defecto: Docker publica `8080` únicamente en
+`127.0.0.1` y la API permite mediante CORS solo los orígenes locales declarados en
+`CORS_ALLOWED_ORIGINS`. No se admite el comodín `*`. CORS aplica a Expo Web; una
+aplicación React Native nativa no depende de CORS, aunque sí debe alcanzar la dirección
+correcta del host.
+
+| Cliente de desarrollo | `EXPO_PUBLIC_API_URL` en el repositorio móvil | Configuración del Core |
+|---|---|---|
+| Expo Web en la misma PC | `http://127.0.0.1:8080` | Valores predeterminados |
+| Emulador Android | `http://10.0.2.2:8080` | Valores predeterminados |
+| Celular físico en la misma red privada | `http://<IP-LAN-DE-LA-PC>:8080` | `CORE_BIND_ADDRESS=0.0.0.0` durante la demostración |
+
+Para Expo Web, si Metro usa otro origen, debe agregarse el origen exacto —sin rutas— a
+`CORS_ALLOWED_ORIGINS`. Para un celular físico, ambos equipos deben estar en la misma
+red privada; se obtiene la IPv4 de la PC con `ipconfig`. La exposición LAN es temporal:
+no debe usarse en Wi-Fi público y, al terminar, se restaura
+`CORE_BIND_ADDRESS=127.0.0.1` y se recrea el Core.
+
+El repositorio móvil usa `EXPO_PUBLIC_DEMO_KEY` únicamente para esta demostración y su
+valor debe coincidir con `DEMO_API_KEY`. Toda variable `EXPO_PUBLIC_*` queda visible en
+la aplicación compilada, por lo que esta clave **no representa autenticación bancaria**
+ni debe reutilizarse como secreto real. En la arquitectura objetivo, Cognito/API Gateway
+y el BFF sustituyen este mecanismo local.
+
+Después de modificar `.env`, validar y recrear únicamente el Core:
+
+```powershell
+docker compose config --quiet
+docker compose up -d --build --force-recreate core
+Invoke-RestMethod -Method Get -Uri http://127.0.0.1:8080/health
+```
+
+Si `CORE_HOST_PORT` cambia por un conflicto —por ejemplo, pgAdmin ocupa `8080`—, el
+puerto nuevo también debe reflejarse en `EXPO_PUBLIC_API_URL`.
+
 ## Secuencia exacta en Windows PowerShell
 
 Desde la carpeta que contiene el ZIP, extráelo y entra a la raíz del proyecto. Si ya lo extrajiste, empieza en `Set-Location`:
