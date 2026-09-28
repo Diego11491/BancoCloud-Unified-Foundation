@@ -103,6 +103,7 @@ correlación y recuperación del outbox ante la caída del consumidor.
 - [x] Probar retry y deduplicación del replay con transporte simulado. **LOCAL VERIFIED**
 - [x] Ejecutar replay real dos veces y verificar 10 000 aceptados + 10 000 replays. **LOCAL VERIFIED**
 - [x] Probar caída y recuperación del consumidor con outbox retenido y drenado posterior. **LOCAL VERIFIED**
+- [ ] Validar React Native/Expo contra el Core local usando CORS con allowlist, bind loopback por defecto y exposición LAN explícita solo para la demo en dispositivo físico. **LOCAL READY / MOBILE INTEGRATION PENDING**
 - [ ] Ejecutar load test gradual 5→20→100 eps solo después de los gates funcionales. **LOCAL PENDING**
 - [ ] Ejecutar smoke cloud y documentar costos/teardown. **CLOUD PENDING**
 
