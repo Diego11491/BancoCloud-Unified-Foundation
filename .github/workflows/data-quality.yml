@@ -1,0 +1,59 @@
+name: BancoCloud Data Quality
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bancocloud/bi.py'
+      - 'bancocloud/cold.py'
+      - 'bancocloud/engine.py'
+      - 'config/policy.v1.json'
+      - 'contracts/**'
+      - 'data/generator/**'
+      - 'data/synthetic/**'
+      - 'tests/unit/analytics/**'
+      - '.github/workflows/data-quality.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bancocloud/bi.py'
+      - 'bancocloud/cold.py'
+      - 'bancocloud/engine.py'
+      - 'config/policy.v1.json'
+      - 'contracts/**'
+      - 'data/generator/**'
+      - 'data/synthetic/**'
+      - 'tests/unit/analytics/**'
+      - '.github/workflows/data-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: data-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  medallion-gold:
+    name: Medallion and Gold gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install contract dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build and reconcile Medallion Gold
+        run: python -m bancocloud.bi --expected-events 10000
+
+      - name: Run analytics tests
+        run: python -m unittest tests.unit.analytics.test_bi_gold

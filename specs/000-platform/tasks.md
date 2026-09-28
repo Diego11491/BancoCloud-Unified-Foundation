@@ -86,9 +86,10 @@ correlación y recuperación del outbox ante la caída del consumidor.
 - [x] Proyectar 10 000 eventos en Bronze local. **LOCAL VERIFIED**
 - [x] Validar y deduplicar 10 000 eventos en Silver con cuarentena local. **LOCAL VERIFIED**
 - [x] Generar Gold local por día/canal y reconciliar conteos. **LOCAL VERIFIED**
+- [x] Generar Gold dimensional reproducible para Power BI con 5960 perfiles, 10 000 transacciones/evaluaciones, etiquetas separadas y 93 casos HIGH. **LOCAL VERIFIED**
 - [x] Declarar Quarantine privada en ADLS con output y lifecycle policy parametrizada. **LOCAL VERIFIED — BUILD/LINT PASS 27/09/2026**
 - [ ] Implementar ADLS/Synapse Serverless para el cold path cloud. **CLOUD PENDING**
-- [ ] Crear Power BI sobre Gold; morosidad/rentabilidad requieren fuentes todavía no modeladas. **CLOUD PENDING**
+- [ ] Crear el archivo Power BI Desktop sobre Gold; morosidad/rentabilidad requieren fuentes todavía no modeladas. **LOCAL READY / DASHBOARD PENDING**
 
 ## T9 — GenAI
 
@@ -108,6 +109,7 @@ correlación y recuperación del outbox ante la caída del consumidor.
 ## T11 — CI/CD
 
 - [x] Ejecutar en GitHub el workflow de pruebas Python y build/lint Bicep sin credenciales cloud. **CI VERIFIED — RUN #1 PASS 27/09/2026**
+- [ ] Ejecutar en GitHub el workflow path-scoped de Data Quality para Medallion y Gold. **LOCAL VERIFIED / CI RUN PENDING**
 - [ ] Proteger `main` y exigir el workflow CI antes de merge. **REPOSITORY CONFIG PENDING**
 - [ ] Diseñar CD manual con OIDC, `what-if`, environment protegido, aprobación y teardown. **CLOUD PENDING**
 - [ ] No habilitar despliegue automático por `push` mientras no estén cerrados los gates de seguridad y costo. **GUARDRAIL**
