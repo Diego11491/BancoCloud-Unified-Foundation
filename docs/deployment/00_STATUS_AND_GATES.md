@@ -44,7 +44,7 @@ El PASS local no equivale a despliegue cloud ni autoriza a exponer el Core a Int
 | 3 Azure hot path | Enrichment v2 probado a nivel unitario y Docker; rules/policy locales con 10 000 scores versionados y 93 casos idempotentes; adaptadores cloud deshabilitados | Baseline ML local y fuentes gobernadas pendientes, además de Event Hubs, Container Apps, Azure SQL y Service Bus; Bicep de messaging parcial; `what-if` pendiente |
 | 4 Cold path | Bronze/Silver/Gold local, cuarentena y reconciliación; Quarantine privada y lifecycle declaradas; build/lint PASS | ADLS ingestion, vistas Synapse y Power BI pendientes; BI de morosidad/rentabilidad exige fuentes de préstamos/costos aún no modeladas |
 | 5 AWS | Contrato core disponible para BFF; interfaz AWS→core deshabilitada | Cognito, API Gateway, Lambda, S3/CloudFront y método seguro AWS→core pendientes; no exponer el core local por Internet sin diseño aprobado |
-| 6 Analistas/GenAI | Registro de decisión humana por contrato | Staff IAM, portal y resumen asistido pendientes; GenAI no bloquea casos |
+| 6 Analistas/GenAI | Registro de decisión humana por contrato; resumen evidence-only local, fallback, rechazo de PII/decisiones y smoke con caso HIGH real | Staff IAM, portal y evaluación con un deployment aprobado pendientes; GenAI no bloquea casos |
 | 7 IaC/CI | Módulos Bicep y GitHub Actions Run #1 PASS: Python tests + Bicep build/lint sin credenciales | `what-if`, SAM, OIDC y scans pendientes; CI no despliega recursos |
 | 8/9 Resiliencia/demo | Unitarios, reconciliación, replay real, smoke y recuperación del consumidor ejecutados | Métricas bajo carga, nube y teardown cloud pendientes |
 

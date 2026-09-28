@@ -59,6 +59,29 @@ Invoke-RestMethod -Method Get -Uri http://127.0.0.1:8080/health
 Si `CORE_HOST_PORT` cambia por un conflicto —por ejemplo, pgAdmin ocupa `8080`—, el
 puerto nuevo también debe reflejarse en `EXPO_PUBLIC_API_URL`.
 
+## Gate GenAI local
+
+GenAI es una asistencia opcional para casos HIGH ya creados. No participa en el
+scoring, la autorización transaccional ni la creación del caso. Compose incorpora un
+healthcheck interno y el smoke espera readiness antes de consultar el servicio:
+
+```powershell
+docker compose --profile tools up -d --build genai
+docker compose ps -a genai
+python scripts/smoke_genai_local.py
+```
+
+El resultado exige `PASS` para salud, caso HIGH gobernado, contrato/correlación,
+autenticación, rechazo de PII y revisión humana. Solo imprime estados y el modo de
+generación; no muestra la clave ni la evidencia. En modo local se espera
+`LOCAL_DETERMINISTIC`.
+
+La resiliencia se comprueba deteniendo exclusivamente GenAI y verificando que
+`GET /health` y `GET /cases` del Core continúan disponibles. Esto no oculta la falla:
+el cliente debe mostrar asistencia no disponible y permitir reintento. Si solo falla
+el proveedor externo, el servicio responde con `MODEL_FALLBACK`; si cae el servicio
+completo, no se presenta resumen y el analista conserva la evidencia estructurada.
+
 ## Secuencia exacta en Windows PowerShell
 
 Desde la carpeta que contiene el ZIP, extráelo y entra a la raíz del proyecto. Si ya lo extrajiste, empieza en `Set-Location`:

@@ -81,7 +81,8 @@ modo local y nunca interviene en scoring, creación de casos o autorización.
 
 ```powershell
 docker compose --profile tools up -d --build genai
-Invoke-RestMethod -Method Get -Uri http://127.0.0.1:8082/health
+docker compose ps -a genai
+python scripts/smoke_genai_local.py
 ```
 
 Para `POST /explain-case`, enviar el header `x-demo-key` y un JSON con `case_id`
@@ -90,6 +91,11 @@ valida contra `GenAICaseSummary.v1` y queda marcada como asistencia con revisió
 humana obligatoria. Las variables `GENAI_*` de `.env.example` permiten conectar
 más adelante un endpoint HTTPS OpenAI-compatible; si se dejan vacías se usa el
 fallback determinista local.
+
+El smoke espera readiness, usa un caso HIGH real ya gobernado, comprueba contrato y
+correlación, exige autenticación, rechaza PII y confirma revisión humana sin imprimir
+la clave ni la evidencia. El healthcheck de Compose diferencia un contenedor iniciado
+de una API realmente disponible.
 
 ## Integración continua
 
