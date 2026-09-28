@@ -96,6 +96,7 @@ correlación y recuperación del outbox ante la caída del consumidor.
 - [x] Implementar evidence-only prompt con versión, hash del input y contrato de salida. **LOCAL VERIFIED**
 - [x] Implementar rechazo de PII/secrets, reason codes inventados y decisiones prohibidas. **LOCAL VERIFIED**
 - [x] Demostrar por prueba aislada que el fallo del proveedor devuelve fallback y no muta el caso. **LOCAL VERIFIED**
+- [x] Ejecutar la API con un caso HIGH real, comprobar autenticación/PII, health/readiness y continuidad del Core durante la caída de GenAI. **LOCAL VERIFIED — 28/09/2026**
 - [ ] Evaluar un deployment real de Azure OpenAI, calidad, latencia, costo y telemetría. **CLOUD PENDING**
 
 ## T10 — End-to-end
@@ -117,7 +118,7 @@ correlación y recuperación del outbox ante la caída del consumidor.
 
 ## Siguiente task exacta
 
-**T3-MODULAR-CORE-DOCKER-GATE:** validar `docker compose config`, recrear `core`
-con el entrypoint modular, comprobar que `migrate` termina en exit code 0 y ejecutar
-health, listado de cuentas/productos, transferencia idempotente y consulta de casos.
-No borrar el volumen ni crear recursos cloud durante esta tarea.
+**T10-MOBILE-E2E:** cuando la rama móvil del equipo esté disponible, validar Expo
+contra el Core local para onboarding, cuentas, tarjetas, préstamos y transferencias;
+mantener mocks solo como modo explícito de demostración offline. No exponer el Core
+a Internet ni crear recursos cloud durante esta tarea.
