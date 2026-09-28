@@ -13,7 +13,7 @@ Fuente de verdad: `../00_SOURCE_OF_TRUTH.md`. Esta fase prepara los servicios y 
 | Casos HIGH y decisión | `bancocloud/service.py`, `contracts/` | Preparado para emulación local | Solo HIGH crea caso, replay no lo duplica |
 | Reproductor de eventos | `bancocloud/replay.py` | Preparado | Primera pasada: 10 000 aceptados; segunda: 10 000 replays |
 | Verificador de gates | `bancocloud/gates.py` | Preparado | `pass:true` y exit code 0 |
-| Cold path local | `bancocloud/cold.py` | Ya preparado | Bronze=10k, Silver=10k, cuarentena=0 |
+| Cold path local | `bancocloud/cold.py`, `bancocloud/bi.py` | Ya preparado | Bronze=10k, Silver=10k, cuarentena=0 y Gold BI conciliado |
 | AWS/Azure | `bancocloud/adapters.py` | Interfaces bloqueadas intencionalmente | Invocarlas lanza `CloudAdapterDisabled`, sin red cloud |
 
 ## Empaquetado y configuración
@@ -64,7 +64,7 @@ Se espera al menos un outbox pendiente durante la caída y cero al recuperarse. 
 
 ## Cold path y cierre
 
-Opcional, sin Docker, desde la raíz con Python: `py -3.12 -m bancocloud.cold data/synthetic/transaction_events.jsonl data/quality/lake`. Para detener servicios conservando el volumen: `docker compose down`. No usar `down -v` salvo cuando decidas borrar de forma deliberada el entorno demo.
+Opcional, sin Docker, desde la raíz con Python: `py -3.12 -m bancocloud.cold data/synthetic/transaction_events.jsonl data/quality/lake`. Para generar el Gold dimensional reproducible para Power BI: `py -3.12 -m bancocloud.bi --expected-events 10000`. Para detener servicios conservando el volumen: `docker compose down`. No usar `down -v` salvo cuando decidas borrar de forma deliberada el entorno demo.
 
 ## Lo que aún no autoriza este gate
 
