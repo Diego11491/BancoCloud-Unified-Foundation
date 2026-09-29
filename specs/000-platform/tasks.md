@@ -42,7 +42,7 @@ correlación y recuperación del outbox ante la caída del consumidor.
 - [x] Demostrar `Transaction + OutboxEvent` en el mismo commit y ausencia de transacciones sin outbox. **LOCAL VERIFIED**
 - [x] Detener el consumidor, comprobar un outbox pendiente y verificar drenado a cero al recuperarlo. **LOCAL VERIFIED**
 - [x] Ejecutar publisher y replay dos veces sin duplicar scores ni casos. **LOCAL VERIFIED**
-- [ ] Arrancar el Core modular desde Docker y ejecutar automáticamente la migración idempotente 002 antes del servicio. **LOCAL READY / DOCKER VALIDATION PENDING**
+- [x] Arrancar el Core modular desde Docker y ejecutar automáticamente la migración idempotente 002 antes del servicio. **LOCAL VERIFIED — migrate Exited(0), Core healthy y smoke PASS**
 
 ## T4 — Fraud engine local
 
@@ -52,6 +52,9 @@ correlación y recuperación del outbox ante la caída del consumidor.
 - [x] Implementar features iniciales de monto, dispositivo, beneficiario y actividad reciente. **LOCAL VERIFIED**
 - [x] Implementar rules baseline configurable y versionado. **LOCAL VERIFIED**
 - [x] Implementar y evaluar baseline ML interpretable con split temporal 70/15/15, controles de leakage y métricas PR-AUC, precision, recall, FPR y calibración. **LOCAL VERIFIED — OFFLINE CANDIDATE; NOT AUTHORIZED**
+- [x] Separar construcción de dataset, métricas, entrenamiento y CLI del baseline sin romper imports existentes. **LOCAL VERIFIED**
+- [x] Crear challenge sintético v2 con 90 días, clientes activos, cuatro escenarios de fraude y negativos difíciles; conservar el fixture original como regresión. **LOCAL VERIFIED**
+- [x] Comparar Dummy, Logistic Regression, Random Forest e HistGradientBoosting; seleccionar threshold/champion únicamente con validation temporal y ejecutar control de labels mezclados. **LOCAL VERIFIED — OFFLINE CHAMPION; NOT AUTHORIZED**
 - [x] Implementar policy engine LOCAL FIRST con LOW/MEDIUM/HIGH. **LOCAL VERIFIED**
 - [x] Emitir `reason_codes`, `model_version`, `feature_version` y `policy_version` conforme al contrato. **LOCAL VERIFIED**
 - [x] Extraer la orquestación antifraude de `service.py` mediante puertos para evaluación y publicación de casos; conservar PostgreSQL como adaptador LOCAL FIRST. **LOCAL VERIFIED**
@@ -59,7 +62,7 @@ correlación y recuperación del outbox ante la caída del consumidor.
 ## T5 — Azure LITE
 
 - [x] Ratificar ADR-0005 para identidad, conectividad, SQL y despliegue en dos etapas. **TEAM ACCEPTED / DEPLOYMENT GATED**
-- [ ] Completar Bicep mínimo; mensajería incluye consumer group, checkpoint y RBAC mínimo. **CODE READY / STATIC AND CLOUD VALIDATION PENDING**
+- [ ] Separar el Bicep en un primer corte de costo que despliegue solo Managed Identity, Event Hubs, Storage/checkpoint y RBAC mínimo. **ARM VALIDATION + FULL WHAT-IF PASS / COST SLICE PENDING**
 - [ ] Integrar Event Hubs con identidad y checkpoint duradero. **ADAPTERS READY / REAL AZURE E2E PENDING**
 - [ ] Desplegar Container App `fraud-engine`. **CLOUD PENDING**
 - [ ] Crear Azure SQL con schemas separados para profiles/cases. **CLOUD PENDING**
@@ -114,12 +117,14 @@ correlación y recuperación del outbox ante la caída del consumidor.
 
 - [x] Ejecutar en GitHub el workflow de pruebas Python y build/lint Bicep sin credenciales cloud. **CI VERIFIED — RUN #1 PASS 27/09/2026**
 - [ ] Ejecutar en GitHub el workflow path-scoped de Data Quality para Medallion y Gold. **LOCAL VERIFIED / CI RUN PENDING**
+- [ ] Ejecutar en GitHub el workflow path-scoped de ML Quality para challenge y benchmark. **LOCAL VERIFIED / CI RUN PENDING**
 - [ ] Proteger `main` y exigir el workflow CI antes de merge. **REPOSITORY CONFIG PENDING**
 - [ ] Diseñar CD manual con OIDC, `what-if`, environment protegido, aprobación y teardown. **CLOUD PENDING**
 - [ ] No habilitar despliegue automático por `push` mientras no estén cerrados los gates de seguridad y costo. **GUARDRAIL**
 
 ## Siguiente task exacta
 
-**T5-AZURE-HOT-PATH-PREFLIGHT:** compilar/lint Bicep, revisar `what-if`, confirmar
-región/costos/scopes y ejecutar Core→Event Hubs→worker local→FraudService con datos
-sintéticos. No desplegar el worker en Container Apps hasta implementar Azure SQL.
+**T5-AZURE-COST-CONTROLLED-SLICE:** parametrizar el despliegue para excluir SQL,
+Service Bus, ACR y observabilidad del primer corte; ejecutar un nuevo `what-if` y
+confirmar que solo Managed Identity, Event Hubs, Storage/checkpoint y RBAC serán
+creados. No desplegar el worker en Container Apps hasta implementar persistencia Azure.

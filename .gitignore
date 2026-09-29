@@ -8,8 +8,10 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
-
 data/quality/lake/
 data/quality/ml_feature_matrix.csv
-
 upload/
+data/quality/ml_benchmark_matrix.csv
+data/quality/ml_benchmark_report.json
+data/quality/ml_challenge_v2/
+*.patch
