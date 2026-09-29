@@ -42,16 +42,8 @@ param sqlAdministratorLogin string
 @description('SQL administrator password supplied only during deployment')
 param sqlAdministratorPassword string
 
-module messaging './messaging-lite.bicep' = {
-  name: 'messaging-${uniqueString(resourceGroup().id, suffix)}'
-  params: {
-    suffix: suffix
-    location: location
-    owner: owner
-    expiry: expiry
-    quarantineRetentionDays: quarantineRetentionDays
-  }
-}
+@description('Optional Entra service principal object ID for the temporary local Event Hubs integration')
+param localIntegrationPrincipalId string = ''
 
 module foundation './foundation-lite.bicep' = {
   name: 'foundation-${uniqueString(resourceGroup().id, suffix)}'
@@ -62,6 +54,19 @@ module foundation './foundation-lite.bicep' = {
     expiry: expiry
     logDailyQuotaGb: logDailyQuotaGb
     enablePurgeProtection: enablePurgeProtection
+  }
+}
+
+module messaging './messaging-lite.bicep' = {
+  name: 'messaging-${uniqueString(resourceGroup().id, suffix)}'
+  params: {
+    suffix: suffix
+    location: location
+    owner: owner
+    expiry: expiry
+    quarantineRetentionDays: quarantineRetentionDays
+    workloadIdentityPrincipalId: foundation.outputs.workloadIdentityPrincipalId
+    localIntegrationPrincipalId: localIntegrationPrincipalId
   }
 }
 
@@ -80,10 +85,14 @@ module data './data-lite.bicep' = {
 output deploymentMode string = 'STUDENT_LITE_STATIC_PREFLIGHT'
 
 output eventHubNamespaceName string = messaging.outputs.eventHubNamespaceName
+output eventHubFullyQualifiedNamespace string = messaging.outputs.eventHubFullyQualifiedNamespace
 output eventHubName string = messaging.outputs.eventHubName
+output eventHubConsumerGroupName string = messaging.outputs.eventHubConsumerGroupName
 output serviceBusNamespaceName string = messaging.outputs.serviceBusNamespaceName
 output highFraudQueueName string = messaging.outputs.queueName
 output storageAccountName string = messaging.outputs.storageAccountName
+output blobAccountUrl string = messaging.outputs.blobAccountUrl
+output checkpointContainerName string = messaging.outputs.checkpointContainerName
 output quarantineContainerName string = messaging.outputs.quarantineContainerName
 output quarantineRetentionDaysApplied int = messaging.outputs.quarantineRetentionDaysApplied
 

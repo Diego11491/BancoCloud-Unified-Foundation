@@ -41,7 +41,7 @@ El PASS local no equivale a despliegue cloud ni autoriza a exponer el Core a Int
 | 0 Arquitectura | Fuente de verdad y ADR-0001/0002 preservados | Aceptación del equipo pendiente |
 | 1 Datos/contratos | Excel revalidado por hash; 5960 perfiles; 10k eventos; etiquetas separadas; cuatro schemas usados; 0 rechazo en reproyección local | Verificar el escenario de datos con el equipo, calidad y representatividad; no interpretar etiquetas generadas como fraude real |
 | 2 Core/outbox | Gate Docker legacy completado; entrypoint modular y migración automática declarados con regresión estática | Revalidar Docker modular: migrate=Exited(0), cuentas/productos, transferencia, casos, outbox y recuperación; no reutilizar autenticación demo fuera del laboratorio |
-| 3 Azure hot path | Enrichment y baseline ML probados localmente; FraudService separado de transporte/persistencia mediante puertos; adaptadores cloud deshabilitados | Event Hubs sender/worker, checkpoint, Container Apps, Azure SQL y Service Bus; ADR-0005/`what-if` pendientes |
+| 3 Azure hot path | FraudService desacoplado; sender Event Hubs, worker y checkpoint implementados con identidad passwordless; ADR-0005 aceptado | Compilar/lint tras aplicar el cambio, revisar `what-if` y ejecutar E2E híbrido real; Container Apps espera Azure SQL y Service Bus |
 | 4 Cold path | Bronze/Silver/Gold local, cuarentena y reconciliación; Quarantine privada y lifecycle declaradas; build/lint PASS | ADLS ingestion, vistas Synapse y Power BI pendientes; BI de morosidad/rentabilidad exige fuentes de préstamos/costos aún no modeladas |
 | 5 AWS | Contrato core disponible para BFF; interfaz AWS→core deshabilitada | Cognito, API Gateway, Lambda, S3/CloudFront y método seguro AWS→core pendientes; no exponer el core local por Internet sin diseño aprobado |
 | 6 Analistas/GenAI | Registro de decisión humana por contrato; resumen evidence-only local, fallback, rechazo de PII/decisiones y smoke con caso HIGH real | Staff IAM, portal y evaluación con un deployment aprobado pendientes; GenAI no bloquea casos |
@@ -54,10 +54,11 @@ El PASS local no equivale a despliegue cloud ni autoriza a exponer el Core a Int
 
 ## Próximo gate autorizado
 
-La siguiente unidad de trabajo es **T5-AZURE-HOT-PATH-VERTICAL-SLICE**: ratificar
-ADR-0005, implementar Core→Event Hubs y consumir desde un worker de Container Apps
-con checkpoint duradero. El primer gate cloud debe preservar contrato, idempotencia,
-`correlation_id` y recuperación ante reentrega antes de añadir servicios analíticos.
+La siguiente unidad de trabajo es **T5-AZURE-HOT-PATH-PREFLIGHT**: compilar/lint,
+revisar `what-if`, presupuesto y scopes RBAC, y ejecutar Core→Event Hubs→worker local
+con checkpoint Blob. El primer gate cloud debe preservar contrato, idempotencia,
+`correlation_id` y recuperación ante reentrega. Container Apps queda bloqueado hasta
+que exista un adaptador Azure SQL compatible.
 
 ## Riesgos conocidos
 
