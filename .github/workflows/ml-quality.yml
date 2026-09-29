@@ -1,0 +1,80 @@
+name: BancoCloud ML Quality
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bancocloud/ml/**'
+      - 'bancocloud/ml_baseline.py'
+      - 'bancocloud/ml_benchmark.py'
+      - 'bancocloud/engine.py'
+      - 'data/generator/**'
+      - 'data/synthetic/**'
+      - 'tests/test_ml_baseline.py'
+      - 'tests/unit/ml/**'
+      - 'requirements-ml.txt'
+      - '.github/workflows/ml-quality.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bancocloud/ml/**'
+      - 'bancocloud/ml_baseline.py'
+      - 'bancocloud/ml_benchmark.py'
+      - 'bancocloud/engine.py'
+      - 'data/generator/**'
+      - 'data/synthetic/**'
+      - 'tests/test_ml_baseline.py'
+      - 'tests/unit/ml/**'
+      - 'requirements-ml.txt'
+      - '.github/workflows/ml-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ml-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-benchmark:
+    name: Synthetic challenge and benchmark
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install ML dependencies
+        run: pip install -r requirements-ml.txt
+
+      - name: Run ML tests
+        run: python -m unittest tests.unit.ml.test_challenge_benchmark tests.test_ml_baseline -v
+
+      - name: Run full offline benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m bancocloud.ml_benchmark \
+            --output "${RUNNER_TEMP}/ml-challenge" \
+            --matrix "${RUNNER_TEMP}/ml-matrix.csv" \
+            --report "${RUNNER_TEMP}/ml-report.json" \
+            > "${RUNNER_TEMP}/ml-benchmark-stdout.json"
+          python - "${RUNNER_TEMP}/ml-report.json" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as source:
+              report = json.load(source)
+
+          assert report["status"] == "OFFLINE_CHAMPION_NOT_AUTHORIZED"
+          assert report["selection_uses_test_partition"] is False
+          assert report["leakage_checks"]["shuffled_label_control"]["pass"] is True
+          assert report["online_fallback_model_version"] == "rules-only-v1"
+          PY
