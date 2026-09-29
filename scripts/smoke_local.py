@@ -2,12 +2,15 @@
 import argparse
 import json
 import time
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from urllib.request import Request, urlopen
 from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
 API = "http://127.0.0.1:8080"
+SMALL_TRANSFER_AMOUNT = Decimal("25.00")
+HIGH_TRANSFER_AMOUNT = Decimal("3000.00")
 
 
 def key_from_env():
@@ -31,15 +34,41 @@ def request(path, key, payload=None, idempotency_key=None):
         return json.load(response)
 
 
+def select_accounts(accounts, required_balance):
+    active = []
+    for account in accounts:
+        if account.get("status") != "ACTIVE":
+            continue
+        try:
+            balance = Decimal(str(account["balance"]))
+        except (InvalidOperation, KeyError, TypeError):
+            continue
+        active.append((balance, account))
+
+    funded = [item for item in active if item[0] >= required_balance]
+    if not funded:
+        raise RuntimeError(f"No active demo account has the required balance: {required_balance}")
+
+    source = max(funded, key=lambda item: item[0])[1]
+    destinations = [item for item in active if item[1]["account_ref"] != source["account_ref"]]
+    if not destinations:
+        raise RuntimeError("Seed at least two active accounts")
+    destination = min(destinations, key=lambda item: item[0])[1]
+    return source, destination
+
+
 def run(transfer_only=False):
     key = key_from_env()
     with urlopen(API+"/health",timeout=15) as response:
         if json.load(response).get("status") != "ok": raise RuntimeError("Core unhealthy")
     accounts = request("/accounts",key)
     if len(accounts) < 2: raise RuntimeError("Seed at least two accounts")
-    source, destination = accounts[:2]
+    required_balance = SMALL_TRANSFER_AMOUNT if transfer_only else (
+        SMALL_TRANSFER_AMOUNT * 3 + HIGH_TRANSFER_AMOUNT
+    )
+    source, destination = select_accounts(accounts, required_balance)
     payload = {"source_account":source["account_ref"],"destination_account":destination["account_ref"],
-               "amount":"25.00","device_ref":"known-smoke-device","beneficiary_ref":"known-smoke-beneficiary"}
+               "amount":str(SMALL_TRANSFER_AMOUNT),"device_ref":"known-smoke-device","beneficiary_ref":"known-smoke-beneficiary"}
     def send(body):
         idempotency_key = str(uuid4())
         result = request("/transfers",key,body,idempotency_key)
@@ -55,7 +84,7 @@ def run(transfer_only=False):
     run_marker = uuid4().hex
     high = send({
         **payload,
-        "amount":"3000.00",
+        "amount":str(HIGH_TRANSFER_AMOUNT),
         "device_ref": f"new-smoke-device-{run_marker}",
         "beneficiary_ref": f"new-smoke-beneficiary-{run_marker}",
     })
