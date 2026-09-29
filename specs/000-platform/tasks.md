@@ -58,9 +58,9 @@ correlación y recuperación del outbox ante la caída del consumidor.
 
 ## T5 — Azure LITE
 
-- [ ] Ratificar ADR-0005 para identidad, conectividad, SQL y despliegue en dos etapas. **TEAM DECISION**
-- [ ] Completar Bicep mínimo; `messaging-lite.bicep` solo cubre Event Hubs, Service Bus y ADLS. **CLOUD PENDING**
-- [ ] Integrar Event Hubs con identidad y checkpoint duradero. **CLOUD PENDING**
+- [x] Ratificar ADR-0005 para identidad, conectividad, SQL y despliegue en dos etapas. **TEAM ACCEPTED / DEPLOYMENT GATED**
+- [ ] Completar Bicep mínimo; mensajería incluye consumer group, checkpoint y RBAC mínimo. **CODE READY / STATIC AND CLOUD VALIDATION PENDING**
+- [ ] Integrar Event Hubs con identidad y checkpoint duradero. **ADAPTERS READY / REAL AZURE E2E PENDING**
 - [ ] Desplegar Container App `fraud-engine`. **CLOUD PENDING**
 - [ ] Crear Azure SQL con schemas separados para profiles/cases. **CLOUD PENDING**
 - [ ] Integrar HIGH con Service Bus. **CLOUD PENDING**
@@ -120,7 +120,6 @@ correlación y recuperación del outbox ante la caída del consumidor.
 
 ## Siguiente task exacta
 
-**T5-AZURE-HOT-PATH-VERTICAL-SLICE:** ratificar ADR-0005, implementar el sender
-Core→Event Hubs y el worker Event Hubs→FraudService con checkpoint duradero. Mantener
-los adaptadores cloud deshabilitados por defecto y no crear recursos antes de revisar
-el `what-if`, costos, scopes RBAC y teardown.
+**T5-AZURE-HOT-PATH-PREFLIGHT:** compilar/lint Bicep, revisar `what-if`, confirmar
+región/costos/scopes y ejecutar Core→Event Hubs→worker local→FraudService con datos
+sintéticos. No desplegar el worker en Container Apps hasta implementar Azure SQL.

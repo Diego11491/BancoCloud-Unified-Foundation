@@ -81,6 +81,18 @@ class FoundationTests(unittest.TestCase):
         self.assertIn("output quarantineContainerName", messaging)
         self.assertIn("messaging.outputs.quarantineContainerName", main)
 
+    def test_event_hubs_checkpoint_and_least_privilege_rbac_are_declared(self):
+        messaging = (ROOT / "infra/azure/bicep/messaging-lite.bicep").read_text()
+        main = (ROOT / "infra/azure/bicep/main-lite.bicep").read_text()
+        self.assertIn("name: 'fraud-engine'", messaging)
+        self.assertIn("name: 'eventhub-checkpoints'", messaging)
+        self.assertIn("a638d3c7-ab3a-418d-83e6-5f17a39d4fde", messaging)
+        self.assertIn("2b629674-e913-4c01-ae53-ef4638d8f975", messaging)
+        self.assertIn("ba92f5b4-2d11-453d-a403-e96b0029c9fe", messaging)
+        self.assertIn("workloadIdentityPrincipalId: foundation.outputs.workloadIdentityPrincipalId", main)
+        self.assertNotIn("listKeys(", messaging)
+        self.assertNotIn("RootManageSharedAccessKey", messaging)
+
     def test_ci_validates_without_cloud_deployment(self):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text()
         self.assertIn("python -m unittest", workflow)

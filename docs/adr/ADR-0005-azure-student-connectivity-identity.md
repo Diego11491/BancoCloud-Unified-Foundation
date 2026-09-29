@@ -1,6 +1,6 @@
 # ADR-0005 — Conectividad e identidad para Azure Student
 
-**Estado:** Proposed; requiere ratificación del equipo antes de crear recursos.
+**Estado:** Accepted para preflight e implementación; crear recursos continúa sujeto al gate de aprobación.
 **Fecha:** 2026-09-29
 
 ## Contexto
@@ -14,9 +14,10 @@ El modo Student no despliega ExpressRoute, VPN Gateway ni Private Endpoints.
 
 - Mantener PostgreSQL como sistema autoritativo del Core; Azure SQL conserva solo
   perfiles antifraude, evaluaciones, casos y decisiones del analista.
-- Core local → Event Hubs usa TLS 1.2+ y una identidad de aplicación de Entra con
-  `Azure Event Hubs Data Sender` limitada al Event Hub. Su credencial temporal vive
-  únicamente fuera del repositorio y se revoca al cerrar la demostración.
+- El E2E híbrido usa temporalmente una identidad de aplicación de Entra para el
+  publisher y worker locales. Recibe Sender/Receiver sobre el Event Hub y Blob Data
+  Contributor solo sobre el container de checkpoint. La credencial vive fuera del
+  repositorio y se revoca al cerrar la demostración. El target separa identidades.
 - Los workloads en Container Apps usan una identidad administrada asignada por el
   usuario. No reciben connection strings de Event Hubs, Service Bus o Storage.
 - La identidad obtiene únicamente los roles requeridos: Event Hubs Data Receiver,
@@ -46,3 +47,9 @@ El modo Student no despliega ExpressRoute, VPN Gateway ni Private Endpoints.
 
 Antes de `az deployment group create`, el equipo debe aprobar región, scopes RBAC,
 método de bootstrap SQL, presupuesto, horario de teardown y salida del `what-if`.
+
+## Ratificación
+
+El equipo adopta esta decisión para la fase 2. La ratificación autoriza código,
+pruebas estáticas y `what-if`; no autoriza por sí sola un despliegue ni el uso de
+credenciales dentro del repositorio.

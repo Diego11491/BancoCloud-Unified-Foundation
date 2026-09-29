@@ -14,13 +14,20 @@ Fuente de verdad: `../00_SOURCE_OF_TRUTH.md`. Esta fase prepara los servicios y 
 | Reproductor de eventos | `bancocloud/replay.py` | Preparado | Primera pasada: 10 000 aceptados; segunda: 10 000 replays |
 | Verificador de gates | `bancocloud/gates.py` | Preparado | `pass:true` y exit code 0 |
 | Cold path local | `bancocloud/cold.py`, `bancocloud/bi.py` | Ya preparado | Bronze=10k, Silver=10k, cuarentena=0 y Gold BI conciliado |
-| AWS/Azure | `bancocloud/adapters.py` | Interfaces bloqueadas intencionalmente | Invocarlas lanza `CloudAdapterDisabled`, sin red cloud |
+| Azure hot path | `bancocloud/adapters.py`, `bancocloud/azure_event_worker.py` | Event Hubs implementado y bloqueado por configuración | Adaptador unitario; E2E real solo después de `what-if` y RBAC |
+| AWS/Service Bus | `bancocloud/adapters.py` | Interfaces bloqueadas intencionalmente | Invocarlas falla cerrado, sin red cloud |
 
 ## Empaquetado y configuración
 
 Hay **un Dockerfile** compartido por `core`, `fraud`, `publisher`, `replay` y `gate`: misma versión de contratos y dependencias, distinto comando por servicio. `docker-compose.yml` arranca cuatro contenedores persistentes (`db`, `core`, `fraud`, `publisher`) y ejecuta `migrate` como tarea efímera antes del Core. En un volumen nuevo PostgreSQL también aplica `001.sql` y `002_cards_loans.sql` en orden; en uno existente `migrate` vuelve a ejecutar la migración idempotente. `replay`, `gate` y `genai` se inician solo a pedido. Solo el core publica el puerto local `127.0.0.1:8080`; `fraud` y PostgreSQL no tienen puertos del host.
 
 `.env.example` enumera variables; `python scripts/init_env.py` crea `.env` privado con claves nuevas. **No copies las claves del ejemplo ni subas `.env`**. `POSTGRES_PASSWORD` y `DATABASE_URL` se generan de manera coherente. `EVENT_SINK=local-http` impide escoger un adaptador cloud por error. No se incluyen credenciales AWS/Azure.
+
+Para la prueba híbrida de fase 2, instalar `requirements-azure.txt` y cambiar
+`EVENT_SINK` únicamente durante la ventana autorizada. `DefaultAzureCredential`
+usa la identidad de aplicación local; el worker usa la identidad administrada cuando
+se ejecute posteriormente en Azure. El checkpoint se actualiza solo después de que
+`FraudService` termina correctamente.
 
 ## Conectividad con React Native / Expo
 
@@ -128,4 +135,7 @@ Opcional, sin Docker, desde la raíz con Python: `py -3.12 -m bancocloud.cold da
 
 ## Lo que aún no autoriza este gate
 
-No representa un Event Hubs o un Service Bus reales, ni Azure SQL, Cognito, Lambda, Power BI o ML entrenado. La plantilla Bicep parcial existente no debe ejecutarse como parte de esta secuencia. El adaptador AWS carece de ruta AWS→core aprobada. La siguiente fase requerirá ADR de conectividad, implementación de transporte real, identidades, `what-if`/`sam validate` y presupuesto.
+El gate LOCAL FIRST no representa un Event Hubs o Service Bus real, Azure SQL,
+Cognito, Lambda o Power BI Service. La fase 2 incorpora el transporte Event Hubs y
+checkpoint, pero requiere validación Azure separada. El adaptador AWS carece todavía
+de una ruta AWS→core aprobada.

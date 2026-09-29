@@ -6,7 +6,13 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError
 
-from bancocloud.adapters import AzureEventHubsSink, AzureServiceBusCaseSink, AwsDigitalCoreGateway, CloudAdapterDisabled
+from bancocloud.adapters import (
+    AzureEventHubsSink,
+    AzureServiceBusCaseSink,
+    AwsDigitalCoreGateway,
+    CloudAdapterConfigurationError,
+    CloudAdapterDisabled,
+)
 from bancocloud.replay import replay
 from bancocloud import gates
 
@@ -61,8 +67,9 @@ class BoundaryTests(unittest.TestCase):
             self.assertEqual((second["accepted"],second["replayed"]),(0,2))
             self.assertEqual(client.calls,5)
 
-    def test_cloud_boundaries_are_disabled(self):
-        with self.assertRaises(CloudAdapterDisabled): AzureEventHubsSink().publish({})
+    def test_unconfigured_or_future_cloud_boundaries_fail_closed(self):
+        with self.assertRaises(CloudAdapterConfigurationError):
+            AzureEventHubsSink("", "")
         with self.assertRaises(CloudAdapterDisabled): AzureServiceBusCaseSink().publish_high_case({})
         with self.assertRaises(CloudAdapterDisabled): AwsDigitalCoreGateway().send_transfer({})
 

@@ -43,6 +43,13 @@ services:
     depends_on:
       db: {condition: service_healthy}
       fraud: {condition: service_started}
+  azure-worker:
+    profiles: ["azure"]
+    build: .
+    command: ["python", "-m", "bancocloud.azure_event_worker"]
+    env_file: .env
+    depends_on:
+      db: {condition: service_healthy}
   replay:
     profiles: ["tools"]
     build: .
