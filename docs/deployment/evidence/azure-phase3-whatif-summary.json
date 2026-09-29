@@ -1,0 +1,41 @@
+{
+  "evidence_version": "1.0",
+  "observed_on": "2026-09-29",
+  "phase": "azure-deployment-whatif",
+  "subscription_context": {
+    "role": "Owner",
+    "location": "brazilsouth"
+  },
+  "resource_group": {
+    "name": "rg-bancocloud-student-lite",
+    "state": "Succeeded",
+    "real_resource_count": 0
+  },
+  "providers": {
+    "required": 10,
+    "registered": 10,
+    "pass": true
+  },
+  "arm_validation": {
+    "state": "Succeeded",
+    "pass": true
+  },
+  "what_if": {
+    "create": 22,
+    "unsupported": 2,
+    "modify": 0,
+    "delete": 0,
+    "total_changes": 24,
+    "pass": true
+  },
+  "unsupported_scope": [
+    "event-hub-role-assignment-dependent-on-managed-identity",
+    "checkpoint-container-role-assignment-dependent-on-managed-identity"
+  ],
+  "security": {
+    "managed_identity_and_rbac_preserved": true,
+    "subscription_ids_recorded": false,
+    "secrets_recorded": false
+  },
+  "deployment_performed": false
+}
