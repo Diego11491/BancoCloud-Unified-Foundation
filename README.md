@@ -97,6 +97,22 @@ correlación, exige autenticación, rechaza PII y confirma revisión humana sin 
 la clave ni la evidencia. El healthcheck de Compose diferencia un contenedor iniciado
 de una API realmente disponible.
 
+## Evaluar ML sin promoverlo al scoring
+
+El fixture original permanece como prueba de regresión. Para comparar modelos se usa
+un challenge sintético separado, con 90 días, varios escenarios y negativos difíciles:
+
+```powershell
+python -m bancocloud.ml_benchmark
+```
+
+El comando genera los insumos bajo `data/quality/ml_challenge_v2/`, compara un control
+Dummy, regresión logística, Random Forest e HistGradientBoosting, selecciona threshold
+y champion solo con validation temporal y guarda `data/quality/ml_benchmark_report.json`.
+Los artefactos generados están ignorados por Git. El resultado siempre queda marcado
+`OFFLINE_CHAMPION_NOT_AUTHORIZED`; `rules-only-v1` continúa activo hasta un gate de
+promoción independiente. Véase `docs/analytics/ML_MODEL_BENCHMARK.md`.
+
 ## Integración continua
 
 `.github/workflows/ci.yml` ejecuta las pruebas Python y la validación estática de
