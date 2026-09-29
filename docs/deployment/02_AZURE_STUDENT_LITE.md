@@ -4,6 +4,11 @@
 
 `infra/azure/bicep/messaging-lite.bicep` define Event Hubs Standard, Service Bus Standard y ADLS Gen2 Bronze/Silver/Gold con una zona lateral Quarantine privada. **No es una plantilla de la solución Azure completa**: Container App, Azure SQL, ACR, Key Vault, identidad, telemetría y adaptadores Event Hubs/Service Bus son tareas separadas. No ejecutar un despliegue creyendo que el pipeline está conectado.
 
+El despliegue se ejecutará en dos etapas conforme a ADR-0005: primero la plataforma
+sin workloads; después de construir y publicar una imagen inmutable, se despliegan
+los Container Apps. `main-lite.bicep` no debe interpretarse todavía como un
+despliegue end-to-end.
+
 Quarantine recibe únicamente registros rechazados por validación antes de Silver.
 La plantilla aplica una retención configurable de 1 a 90 días (30 por defecto).
 Cada writer futuro debe conservar `reason_code`, referencia del input, timestamp y

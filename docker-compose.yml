@@ -32,7 +32,7 @@ services:
       migrate: {condition: service_completed_successfully}
   fraud:
     build: .
-    command: ["uvicorn", "bancocloud.service:fraud_app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["uvicorn", "bancocloud.api.fraud:app", "--host", "0.0.0.0", "--port", "8000"]
     env_file: .env
     depends_on:
       db: {condition: service_healthy}

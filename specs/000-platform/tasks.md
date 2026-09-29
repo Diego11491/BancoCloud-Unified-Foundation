@@ -54,9 +54,11 @@ correlación y recuperación del outbox ante la caída del consumidor.
 - [x] Implementar y evaluar baseline ML interpretable con split temporal 70/15/15, controles de leakage y métricas PR-AUC, precision, recall, FPR y calibración. **LOCAL VERIFIED — OFFLINE CANDIDATE; NOT AUTHORIZED**
 - [x] Implementar policy engine LOCAL FIRST con LOW/MEDIUM/HIGH. **LOCAL VERIFIED**
 - [x] Emitir `reason_codes`, `model_version`, `feature_version` y `policy_version` conforme al contrato. **LOCAL VERIFIED**
+- [x] Extraer la orquestación antifraude de `service.py` mediante puertos para evaluación y publicación de casos; conservar PostgreSQL como adaptador LOCAL FIRST. **LOCAL VERIFIED**
 
 ## T5 — Azure LITE
 
+- [ ] Ratificar ADR-0005 para identidad, conectividad, SQL y despliegue en dos etapas. **TEAM DECISION**
 - [ ] Completar Bicep mínimo; `messaging-lite.bicep` solo cubre Event Hubs, Service Bus y ADLS. **CLOUD PENDING**
 - [ ] Integrar Event Hubs con identidad y checkpoint duradero. **CLOUD PENDING**
 - [ ] Desplegar Container App `fraud-engine`. **CLOUD PENDING**
@@ -118,7 +120,7 @@ correlación y recuperación del outbox ante la caída del consumidor.
 
 ## Siguiente task exacta
 
-**T10-MOBILE-E2E:** cuando la rama móvil del equipo esté disponible, validar Expo
-contra el Core local para onboarding, cuentas, tarjetas, préstamos y transferencias;
-mantener mocks solo como modo explícito de demostración offline. No exponer el Core
-a Internet ni crear recursos cloud durante esta tarea.
+**T5-AZURE-HOT-PATH-VERTICAL-SLICE:** ratificar ADR-0005, implementar el sender
+Core→Event Hubs y el worker Event Hubs→FraudService con checkpoint duradero. Mantener
+los adaptadores cloud deshabilitados por defecto y no crear recursos antes de revisar
+el `what-if`, costos, scopes RBAC y teardown.
