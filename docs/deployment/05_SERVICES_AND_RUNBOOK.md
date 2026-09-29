@@ -9,7 +9,7 @@ Fuente de verdad: `../00_SOURCE_OF_TRUTH.md`. Esta fase prepara los servicios y 
 | PostgreSQL OLTP | `infra/local/schema.sql`, `infra/local/migrations/002_cards_loans.sql`, `docker-compose.yml` | Preparado | Healthy, migración automática y 5960 cuentas sembradas |
 | Core API modular + outbox ACID | `bancocloud/api/core.py` (`app`) | Preparado | Cuentas, tarjetas, préstamos, transferencia e idempotencia |
 | Publicador con reintentos | `bancocloud/publisher.py`, `bancocloud/adapters.py` | Preparado | Outbox retenido cuando fraud se detiene; entregado al reanudar |
-| Clasificador local | `bancocloud/service.py` (`fraud_app`), `bancocloud/engine.py`, `config/policy.v1.json` | Preparado | 10 000 scores para 10 000 eventos sintéticos |
+| Clasificador local | `bancocloud/api/fraud.py`, `bancocloud/application/fraud_service.py`, `bancocloud/engine.py`, `config/policy.v1.json` | Preparado | 10 000 scores para 10 000 eventos sintéticos |
 | Casos HIGH y decisión | `bancocloud/service.py`, `contracts/` | Preparado para emulación local | Solo HIGH crea caso, replay no lo duplica |
 | Reproductor de eventos | `bancocloud/replay.py` | Preparado | Primera pasada: 10 000 aceptados; segunda: 10 000 replays |
 | Verificador de gates | `bancocloud/gates.py` | Preparado | `pass:true` y exit code 0 |

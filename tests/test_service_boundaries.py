@@ -77,5 +77,17 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("CREATE TABLE IF NOT EXISTS cards", migration)
         self.assertIn("CREATE TABLE IF NOT EXISTS loans", migration)
 
+    def test_fraud_runtime_uses_modular_api_and_explicit_ports(self):
+        compose = (ROOT / "docker-compose.yml").read_text()
+        application = (ROOT / "bancocloud/application/fraud_service.py").read_text()
+        ports = (ROOT / "bancocloud/repositories/fraud.py").read_text()
+        legacy = (ROOT / "bancocloud/service.py").read_text()
+        self.assertIn("bancocloud.api.fraud:app", compose)
+        self.assertIn("FraudEvaluationStore", application)
+        self.assertIn("HighCaseSink", application)
+        self.assertIn("class FraudEvaluationStore", ports)
+        self.assertIn("class HighCaseSink", ports)
+        self.assertNotIn("conn.execute", legacy)
+
 
 if __name__ == "__main__": unittest.main()
