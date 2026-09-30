@@ -48,7 +48,7 @@ Resources:
           Properties: {ApiId: !Ref DigitalApi, Path: /accounts, Method: GET}
         Movements:
           Type: HttpApi
-          Properties: {ApiId: !Ref DigitalApi, Path: /accounts/{account_ref}/movements, Method: GET}
+          Properties: {ApiId: !Ref DigitalApi, Path: "/accounts/{account_ref}/movements", Method: GET}
 
   CardsFunction:
     Type: AWS::Serverless::Function
