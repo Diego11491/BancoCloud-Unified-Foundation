@@ -41,11 +41,11 @@ El PASS local no equivale a despliegue cloud ni autoriza a exponer el Core a Int
 | 0 Arquitectura | Fuente de verdad y ADR-0001/0002 preservados | Aceptación del equipo pendiente |
 | 1 Datos/contratos | Excel revalidado por hash; 5960 perfiles; 10k eventos; etiquetas separadas; cuatro schemas usados; 0 rechazo en reproyección local | Verificar el escenario de datos con el equipo, calidad y representatividad; no interpretar etiquetas generadas como fraude real |
 | 2 Core/outbox | Gate Docker legacy completado; entrypoint modular y migración automática declarados con regresión estática | Revalidar Docker modular: migrate=Exited(0), cuentas/productos, transferencia, casos, outbox y recuperación; no reutilizar autenticación demo fuera del laboratorio |
-| 3 Azure hot path | FraudService desacoplado; sender/worker/checkpoint listos; Bicep lint/build, validación ARM y `what-if` completados; Resource Group vacío | Crear un corte de costo con Managed Identity + Event Hubs + checkpoint/Storage y ejecutar E2E híbrido real; Container Apps espera Azure SQL y Service Bus |
+| 3 Azure hot path | FraudService desacoplado; sender/worker/checkpoint listos; corte Managed Identity + Event Hubs + checkpoint/Storage validado por what-if | Aprobar costo y teardown antes del primer despliegue manual; después ejecutar E2E híbrido real; Container Apps espera Azure SQL y Service Bus |
 | 4 Cold path | Bronze/Silver/Gold local, cuarentena y reconciliación; Quarantine privada y lifecycle declaradas; build/lint PASS | ADLS ingestion, vistas Synapse y Power BI pendientes; BI de morosidad/rentabilidad exige fuentes de préstamos/costos aún no modeladas |
 | 5 AWS | Contrato core disponible para BFF; interfaz AWS→core deshabilitada | Cognito, API Gateway, Lambda, S3/CloudFront y método seguro AWS→core pendientes; no exponer el core local por Internet sin diseño aprobado |
 | 6 Analistas/GenAI | Registro de decisión humana por contrato; resumen evidence-only local, fallback, rechazo de PII/decisiones y smoke con caso HIGH real | Staff IAM, portal y evaluación con un deployment aprobado pendientes; GenAI no bloquea casos |
-| 7 IaC/CI | Módulos Bicep, GitHub Actions Run #1 y preflight Azure PASS; `what-if`: 22 Create, 2 Unsupported conocidos, 0 Modify/Delete; ningún servicio desplegado | Corte Bicep por costo, SAM, OIDC y scans pendientes; CI no despliega recursos |
+| 7 IaC/CI | Módulos Bicep, GitHub Actions Run #1 y preflight de costo PASS: 12 Create, 2 Unsupported RBAC, 0 Modify/Delete y 0 recursos desplegados | Primer despliegue manual, SAM, OIDC y scans pendientes; CI no despliega recursos |
 | 8/9 Resiliencia/demo | Unitarios, reconciliación, replay real, smoke y recuperación del consumidor ejecutados | Métricas bajo carga, nube y teardown cloud pendientes |
 
 **Regla de liberación:** el código local no equivale a despliegue bancario ni a entorno cloud operativo. Ningún recurso cloud se crea sin pasar validación local, preview de IaC, decisión de región/cuota y estrategia de apagado.
@@ -64,10 +64,10 @@ El PASS local no equivale a despliegue cloud ni autoriza a exponer el Core a Int
 
 ## Próximo gate autorizado
 
-La siguiente unidad Azure es **T5-AZURE-COST-CONTROLLED-SLICE**: separar el Bicep
-para que el primer `create` incluya únicamente Managed Identity, Event Hubs,
-Storage/checkpoint y RBAC mínimo. Un nuevo `what-if` debe demostrar que SQL, Service
-Bus, ACR y observabilidad permanecen deshabilitados. Después se ejecutará
+La siguiente unidad Azure es **T5-AZURE-COST-CONTROLLED-DEPLOYMENT**: registrar
+estimación de costo, responsable y hora de teardown; revisar nuevamente el Resource
+Group vacío y ejecutar el primer `create` manual únicamente con Managed Identity,
+Event Hubs, Storage/checkpoint y RBAC mínimo. Después se ejecutará
 Core→Event Hubs→worker local con contrato, idempotencia, `correlation_id` y
 recuperación ante reentrega. Container Apps continúa bloqueado hasta disponer de
 persistencia Azure compatible.

@@ -79,7 +79,7 @@ class FoundationTests(unittest.TestCase):
         self.assertIn("prefixMatch", messaging)
         self.assertIn("'quarantine/'", messaging)
         self.assertIn("output quarantineContainerName", messaging)
-        self.assertIn("messaging.outputs.quarantineContainerName", main)
+        self.assertIn("messaging.?outputs.?quarantineContainerName", main)
 
     def test_event_hubs_checkpoint_and_least_privilege_rbac_are_declared(self):
         messaging = (ROOT / "infra/azure/bicep/messaging-lite.bicep").read_text()
