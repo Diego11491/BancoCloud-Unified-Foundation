@@ -62,7 +62,7 @@ correlación y recuperación del outbox ante la caída del consumidor.
 ## T5 — Azure LITE
 
 - [x] Ratificar ADR-0005 para identidad, conectividad, SQL y despliegue en dos etapas. **TEAM ACCEPTED / DEPLOYMENT GATED**
-- [ ] Separar el Bicep en un primer corte de costo que despliegue solo Managed Identity, Event Hubs, Storage/checkpoint y RBAC mínimo. **ARM VALIDATION + FULL WHAT-IF PASS / COST SLICE PENDING**
+- [x] Separar el Bicep en un primer corte de costo que despliegue solo Managed Identity, Event Hubs, Storage/checkpoint y RBAC mínimo. **WHAT-IF PASS — 12 CREATE / 2 UNSUPPORTED RBAC / 0 MODIFY-DELETE / NOT DEPLOYED**
 - [ ] Integrar Event Hubs con identidad y checkpoint duradero. **ADAPTERS READY / REAL AZURE E2E PENDING**
 - [ ] Desplegar Container App `fraud-engine`. **CLOUD PENDING**
 - [ ] Crear Azure SQL con schemas separados para profiles/cases. **CLOUD PENDING**
@@ -124,7 +124,7 @@ correlación y recuperación del outbox ante la caída del consumidor.
 
 ## Siguiente task exacta
 
-**T5-AZURE-COST-CONTROLLED-SLICE:** parametrizar el despliegue para excluir SQL,
-Service Bus, ACR y observabilidad del primer corte; ejecutar un nuevo `what-if` y
-confirmar que solo Managed Identity, Event Hubs, Storage/checkpoint y RBAC serán
-creados. No desplegar el worker en Container Apps hasta implementar persistencia Azure.
+**T5-AZURE-COST-CONTROLLED-DEPLOYMENT:** registrar estimación de costo, responsable
+y hora de teardown; reconfirmar el Resource Group vacío y ejecutar manualmente el
+primer despliegue de Managed Identity, Event Hubs, Storage/checkpoint y RBAC mínimo.
+No desplegar el worker en Container Apps hasta implementar persistencia Azure.

@@ -2,11 +2,12 @@
 
 ## Estado
 
-`infra/azure/bicep/messaging-lite.bicep` define Event Hubs Standard, consumer group,
-checkpoint privado en Blob, RBAC mínimo del worker, Service Bus Standard y ADLS Gen2
-Bronze/Silver/Gold con Quarantine. El sender y worker Event Hubs existen en código,
-pero el E2E Azure real permanece pendiente. No ejecutar un despliegue creyendo que
-Container Apps, Azure SQL o Service Bus ya están conectados.
+`infra/azure/bicep/main-lite.bicep` usa feature flags de costo. Por defecto define
+Managed Identity, Event Hubs Standard, consumer group, checkpoint privado, RBAC
+mínimo y ADLS Gen2 Bronze/Silver/Gold con Quarantine. Azure SQL, Service Bus, ACR,
+observabilidad y Key Vault permanecen deshabilitados. El sender y worker Event Hubs
+existen en código, pero el E2E Azure real permanece pendiente. No ejecutar un
+despliegue creyendo que Container Apps, Azure SQL o Service Bus ya están conectados.
 
 El despliegue se ejecutará en dos etapas conforme a ADR-0005: primero la plataforma
 sin workloads; después de construir y publicar una imagen inmutable, se despliegan
@@ -30,8 +31,14 @@ az account show --query "{name:name,id:id}" -o json
 az bicep build --file infra/azure/bicep/main-lite.bicep
 az bicep lint --file infra/azure/bicep/main-lite.bicep
 az group create --name <grupo_demo> --location <region_confirmada> --tags project=bancocloud environment=student-lite owner=<owner> expiry=<AAAA-MM-DD>
-az deployment group what-if --resource-group <grupo_demo> --template-file infra/azure/bicep/main-lite.bicep --parameters suffix=<sufijo_unico> owner=<owner> expiry=<AAAA-MM-DD> sqlAdministratorLogin=<admin_temporal> sqlAdministratorPassword=<secure_value> localIntegrationPrincipalId=<object_id_opcional>
 ```
+
+```powershell
+.\scripts\azure_cost_slice_preflight.ps1 -ResourceGroup <grupo_demo> -Location <region_confirmada> -Suffix <sufijo_unico> -Owner <owner> -Expiry <AAAA-MM-DD>
+```
+
+El corte predeterminado no solicita credenciales SQL. Consultar
+`08_AZURE_COST_CONTROLLED_SLICE.md` para flags, gates y salida esperada.
 
 `az group create` crea únicamente el grupo; si se exige un preview sin mutaciones de ningún tipo, usar un grupo existente. Revisar precio, SKU y restricciones regionales antes de continuar. Desplegar solamente tras cerrar Fase 2 y aprobar el `what-if`:
 

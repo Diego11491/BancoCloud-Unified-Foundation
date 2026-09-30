@@ -1,4 +1,5 @@
 // Student LITE messaging and governed lake zones. Preview before any deployment.
+// Each cost-bearing capability can be disabled independently by the composition root.
 targetScope = 'resourceGroup'
 
 @description('Unique lowercase project suffix; use letters and digits only')
@@ -23,6 +24,15 @@ param localIntegrationPrincipalId string = ''
 @maxValue(90)
 param quarantineRetentionDays int = 30
 
+@description('Deploy Event Hubs, the transaction hub and fraud consumer group')
+param deployEventStreaming bool = true
+
+@description('Deploy the governed ADLS account, Medallion zones and checkpoint container')
+param deployDataLake bool = true
+
+@description('Deploy Service Bus and the HIGH fraud queue')
+param deployServiceBus bool = false
+
 var tags = {
   project: 'bancocloud'
   environment: 'student-lite'
@@ -34,7 +44,7 @@ var eventHubsDataReceiverRoleDefinitionId = 'a638d3c7-ab3a-418d-83e6-5f17a39d4fd
 var eventHubsDataSenderRoleDefinitionId = '2b629674-e913-4c01-ae53-ef4638d8f975'
 var storageBlobDataContributorRoleDefinitionId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 
-resource eventHubNamespace 'Microsoft.EventHub/namespaces@2024-01-01' = {
+resource eventHubNamespace 'Microsoft.EventHub/namespaces@2024-01-01' = if (deployEventStreaming) {
   name: 'bceh${suffix}'
   location: location
   tags: tags
@@ -48,7 +58,7 @@ resource eventHubNamespace 'Microsoft.EventHub/namespaces@2024-01-01' = {
     publicNetworkAccess: 'Enabled'
   }
 }
-resource transactions 'Microsoft.EventHub/namespaces/eventhubs@2024-01-01' = {
+resource transactions 'Microsoft.EventHub/namespaces/eventhubs@2024-01-01' = if (deployEventStreaming) {
   name: 'transaction-posted-v1'
   parent: eventHubNamespace
   properties: {
@@ -56,12 +66,12 @@ resource transactions 'Microsoft.EventHub/namespaces/eventhubs@2024-01-01' = {
     messageRetentionInDays: 1
   }
 }
-resource fraudConsumerGroup 'Microsoft.EventHub/namespaces/eventhubs/consumergroups@2024-01-01' = {
+resource fraudConsumerGroup 'Microsoft.EventHub/namespaces/eventhubs/consumergroups@2024-01-01' = if (deployEventStreaming) {
   name: 'fraud-engine'
   parent: transactions
   properties: {}
 }
-resource bus 'Microsoft.ServiceBus/namespaces@2024-01-01' = {
+resource bus 'Microsoft.ServiceBus/namespaces@2024-01-01' = if (deployServiceBus) {
   name: 'bcsb${suffix}'
   location: location
   tags: tags
@@ -74,7 +84,7 @@ resource bus 'Microsoft.ServiceBus/namespaces@2024-01-01' = {
     publicNetworkAccess: 'Enabled'
   }
 }
-resource highQueue 'Microsoft.ServiceBus/namespaces/queues@2024-01-01' = {
+resource highQueue 'Microsoft.ServiceBus/namespaces/queues@2024-01-01' = if (deployServiceBus) {
   name: 'high-fraud-cases'
   parent: bus
   properties: {
@@ -82,7 +92,7 @@ resource highQueue 'Microsoft.ServiceBus/namespaces/queues@2024-01-01' = {
     duplicateDetectionHistoryTimeWindow: 'P1D'
   }
 }
-resource lake 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+resource lake 'Microsoft.Storage/storageAccounts@2023-05-01' = if (deployDataLake) {
   name: 'bclake${suffix}'
   location: location
   tags: tags
@@ -95,40 +105,40 @@ resource lake 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     allowBlobPublicAccess: false
   }
 }
-resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = if (deployDataLake) {
   name: 'default'
   parent: lake
 }
-resource bronze 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+resource bronze 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = if (deployDataLake) {
   name: 'bronze'
   parent: blobService
   properties: { publicAccess: 'None' }
 }
-resource silver 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+resource silver 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = if (deployDataLake) {
   name: 'silver'
   parent: blobService
   properties: { publicAccess: 'None' }
 }
-resource gold 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+resource gold 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = if (deployDataLake) {
   name: 'gold'
   parent: blobService
   properties: { publicAccess: 'None' }
 }
 
-resource eventHubCheckpoints 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+resource eventHubCheckpoints 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = if (deployDataLake) {
   name: 'eventhub-checkpoints'
   parent: blobService
   properties: { publicAccess: 'None' }
 }
 
 // Quarantine is a side zone for invalid records, not a fourth Medallion layer.
-resource quarantine 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+resource quarantine 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = if (deployDataLake) {
   name: 'quarantine'
   parent: blobService
   properties: { publicAccess: 'None' }
 }
 
-resource lakeLifecycle 'Microsoft.Storage/storageAccounts/managementPolicies@2023-05-01' = {
+resource lakeLifecycle 'Microsoft.Storage/storageAccounts/managementPolicies@2023-05-01' = if (deployDataLake) {
   name: 'default'
   parent: lake
   properties: {
@@ -161,7 +171,7 @@ resource lakeLifecycle 'Microsoft.Storage/storageAccounts/managementPolicies@202
   }
 }
 
-resource fraudReceiverRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+resource fraudReceiverRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployEventStreaming) {
   name: guid(transactions.id, workloadIdentityPrincipalId, eventHubsDataReceiverRoleDefinitionId)
   scope: transactions
   properties: {
@@ -171,7 +181,7 @@ resource fraudReceiverRole 'Microsoft.Authorization/roleAssignments@2022-04-01' 
   }
 }
 
-resource checkpointWriterRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+resource checkpointWriterRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployDataLake) {
   name: guid(eventHubCheckpoints.id, workloadIdentityPrincipalId, storageBlobDataContributorRoleDefinitionId)
   scope: eventHubCheckpoints
   properties: {
@@ -181,7 +191,7 @@ resource checkpointWriterRole 'Microsoft.Authorization/roleAssignments@2022-04-0
   }
 }
 
-resource localIntegrationSenderRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(localIntegrationPrincipalId)) {
+resource localIntegrationSenderRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployEventStreaming && !empty(localIntegrationPrincipalId)) {
   name: guid(transactions.id, localIntegrationPrincipalId, eventHubsDataSenderRoleDefinitionId)
   scope: transactions
   properties: {
@@ -191,7 +201,7 @@ resource localIntegrationSenderRole 'Microsoft.Authorization/roleAssignments@202
   }
 }
 
-resource localIntegrationReceiverRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(localIntegrationPrincipalId)) {
+resource localIntegrationReceiverRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployEventStreaming && !empty(localIntegrationPrincipalId)) {
   name: guid(transactions.id, localIntegrationPrincipalId, eventHubsDataReceiverRoleDefinitionId)
   scope: transactions
   properties: {
@@ -201,7 +211,7 @@ resource localIntegrationReceiverRole 'Microsoft.Authorization/roleAssignments@2
   }
 }
 
-resource localIntegrationCheckpointRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(localIntegrationPrincipalId)) {
+resource localIntegrationCheckpointRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployDataLake && !empty(localIntegrationPrincipalId)) {
   name: guid(eventHubCheckpoints.id, localIntegrationPrincipalId, storageBlobDataContributorRoleDefinitionId)
   scope: eventHubCheckpoints
   properties: {
@@ -211,14 +221,21 @@ resource localIntegrationCheckpointRole 'Microsoft.Authorization/roleAssignments
   }
 }
 
-output eventHubNamespaceName string = eventHubNamespace.name
-output eventHubFullyQualifiedNamespace string = '${eventHubNamespace.name}.servicebus.windows.net'
-output eventHubName string = transactions.name
-output eventHubConsumerGroupName string = fraudConsumerGroup.name
-output serviceBusNamespaceName string = bus.name
-output queueName string = highQueue.name
-output storageAccountName string = lake.name
-output blobAccountUrl string = 'https://${lake.name}.blob.${environment().suffixes.storage}'
-output checkpointContainerName string = eventHubCheckpoints.name
-output quarantineContainerName string = quarantine.name
-output quarantineRetentionDaysApplied int = quarantineRetentionDays
+var deployedEventHubNamespaceName = eventHubNamespace.?name ?? ''
+var deployedStorageAccountName = lake.?name ?? ''
+
+output eventHubNamespaceName string = deployedEventHubNamespaceName
+output eventHubFullyQualifiedNamespace string = empty(deployedEventHubNamespaceName)
+  ? ''
+  : '${deployedEventHubNamespaceName}.servicebus.windows.net'
+output eventHubName string = transactions.?name ?? ''
+output eventHubConsumerGroupName string = fraudConsumerGroup.?name ?? ''
+output serviceBusNamespaceName string = bus.?name ?? ''
+output queueName string = highQueue.?name ?? ''
+output storageAccountName string = deployedStorageAccountName
+output blobAccountUrl string = empty(deployedStorageAccountName)
+  ? ''
+  : 'https://${deployedStorageAccountName}.blob.${environment().suffixes.storage}'
+output checkpointContainerName string = eventHubCheckpoints.?name ?? ''
+output quarantineContainerName string = quarantine.?name ?? ''
+output quarantineRetentionDaysApplied int = deployDataLake ? quarantineRetentionDays : 0

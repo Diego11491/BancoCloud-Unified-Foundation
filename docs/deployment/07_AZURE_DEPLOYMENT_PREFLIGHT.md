@@ -61,8 +61,9 @@ El preflight se considera aprobado porque:
 
 ## Próximo gate
 
-La siguiente fase debe realizar un despliegue controlado por costo. El primer
-corte vertical recomendado contiene Managed Identity, Storage/Data Lake,
-Event Hubs y sus asignaciones RBAC. Azure SQL, Service Bus, observabilidad y
-Container Registry deben habilitarse de forma progresiva según la evidencia
-que requiera la presentación final.
+El corte controlado por costo ya está definido mediante feature flags en
+`main-lite.bicep`. La siguiente acción es ejecutar el preflight descrito en
+`08_AZURE_COST_CONTROLLED_SLICE.md` y confirmar mediante un nuevo what-if que
+solo Managed Identity, Storage/Data Lake, Event Hubs y RBAC mínimo están activos.
+Este documento sigue siendo evidencia del preview completo anterior; no debe
+reinterpretarse como resultado del nuevo corte hasta ejecutar ese gate.

@@ -33,17 +33,41 @@ param quarantineRetentionDays int = 30
 @description('Keep false in the disposable Student environment')
 param enablePurgeProtection bool = false
 
-@description('SQL administrator login name')
-@minLength(1)
+@description('Deploy Event Hubs and its consumer group')
+param deployEventStreaming bool = true
+
+@description('Deploy ADLS Gen2, Medallion zones, Quarantine and checkpoint storage')
+param deployDataLake bool = true
+
+@description('Deploy Azure SQL. Disabled in the first cost-controlled slice')
+param deploySql bool = false
+
+@description('Deploy Service Bus. Disabled in the first cost-controlled slice')
+param deployServiceBus bool = false
+
+@description('Deploy Log Analytics and Application Insights')
+param deployObservability bool = false
+
+@description('Deploy Azure Container Registry')
+param deployContainerRegistry bool = false
+
+@description('Deploy Key Vault')
+param deployKeyVault bool = false
+
+@description('SQL administrator login; required only when deploySql is true')
 @maxLength(128)
-param sqlAdministratorLogin string
+param sqlAdministratorLogin string = ''
 
 @secure()
-@description('SQL administrator password supplied only during deployment')
-param sqlAdministratorPassword string
+@description('SQL administrator password; required only when deploySql is true')
+param sqlAdministratorPassword string = ''
 
 @description('Optional Entra service principal object ID for the temporary local Event Hubs integration')
 param localIntegrationPrincipalId string = ''
+
+// Event consumers require durable checkpoint storage. Enabling streaming therefore
+// always enables the lake/checkpoint account even if deployDataLake is passed false.
+var effectiveDeployDataLake = deployDataLake || deployEventStreaming
 
 module foundation './foundation-lite.bicep' = {
   name: 'foundation-${uniqueString(resourceGroup().id, suffix)}'
@@ -54,10 +78,13 @@ module foundation './foundation-lite.bicep' = {
     expiry: expiry
     logDailyQuotaGb: logDailyQuotaGb
     enablePurgeProtection: enablePurgeProtection
+    deployObservability: deployObservability
+    deployContainerRegistry: deployContainerRegistry
+    deployKeyVault: deployKeyVault
   }
 }
 
-module messaging './messaging-lite.bicep' = {
+module messaging './messaging-lite.bicep' = if (deployEventStreaming || effectiveDeployDataLake || deployServiceBus) {
   name: 'messaging-${uniqueString(resourceGroup().id, suffix)}'
   params: {
     suffix: suffix
@@ -67,10 +94,13 @@ module messaging './messaging-lite.bicep' = {
     quarantineRetentionDays: quarantineRetentionDays
     workloadIdentityPrincipalId: foundation.outputs.workloadIdentityPrincipalId
     localIntegrationPrincipalId: localIntegrationPrincipalId
+    deployEventStreaming: deployEventStreaming
+    deployDataLake: effectiveDeployDataLake
+    deployServiceBus: deployServiceBus
   }
 }
 
-module data './data-lite.bicep' = {
+module data './data-lite.bicep' = if (deploySql) {
   name: 'data-${uniqueString(resourceGroup().id, suffix)}'
   params: {
     suffix: suffix
@@ -82,19 +112,30 @@ module data './data-lite.bicep' = {
   }
 }
 
-output deploymentMode string = 'STUDENT_LITE_STATIC_PREFLIGHT'
+output deploymentMode string = 'STUDENT_LITE_COST_CONTROLLED'
 
-output eventHubNamespaceName string = messaging.outputs.eventHubNamespaceName
-output eventHubFullyQualifiedNamespace string = messaging.outputs.eventHubFullyQualifiedNamespace
-output eventHubName string = messaging.outputs.eventHubName
-output eventHubConsumerGroupName string = messaging.outputs.eventHubConsumerGroupName
-output serviceBusNamespaceName string = messaging.outputs.serviceBusNamespaceName
-output highFraudQueueName string = messaging.outputs.queueName
-output storageAccountName string = messaging.outputs.storageAccountName
-output blobAccountUrl string = messaging.outputs.blobAccountUrl
-output checkpointContainerName string = messaging.outputs.checkpointContainerName
-output quarantineContainerName string = messaging.outputs.quarantineContainerName
-output quarantineRetentionDaysApplied int = messaging.outputs.quarantineRetentionDaysApplied
+output deploymentFeatures object = {
+  managedIdentity: true
+  eventStreaming: deployEventStreaming
+  dataLake: effectiveDeployDataLake
+  sql: deploySql
+  serviceBus: deployServiceBus
+  observability: deployObservability
+  containerRegistry: deployContainerRegistry
+  keyVault: deployKeyVault
+}
+
+output eventHubNamespaceName string = messaging.?outputs.?eventHubNamespaceName ?? ''
+output eventHubFullyQualifiedNamespace string = messaging.?outputs.?eventHubFullyQualifiedNamespace ?? ''
+output eventHubName string = messaging.?outputs.?eventHubName ?? ''
+output eventHubConsumerGroupName string = messaging.?outputs.?eventHubConsumerGroupName ?? ''
+output serviceBusNamespaceName string = messaging.?outputs.?serviceBusNamespaceName ?? ''
+output highFraudQueueName string = messaging.?outputs.?queueName ?? ''
+output storageAccountName string = messaging.?outputs.?storageAccountName ?? ''
+output blobAccountUrl string = messaging.?outputs.?blobAccountUrl ?? ''
+output checkpointContainerName string = messaging.?outputs.?checkpointContainerName ?? ''
+output quarantineContainerName string = messaging.?outputs.?quarantineContainerName ?? ''
+output quarantineRetentionDaysApplied int = messaging.?outputs.?quarantineRetentionDaysApplied ?? 0
 
 output workloadIdentityId string = foundation.outputs.workloadIdentityId
 output workloadIdentityClientId string = foundation.outputs.workloadIdentityClientId
@@ -111,9 +152,9 @@ output keyVaultId string = foundation.outputs.keyVaultId
 output keyVaultName string = foundation.outputs.keyVaultName
 output keyVaultUri string = foundation.outputs.keyVaultUri
 
-output sqlServerId string = data.outputs.sqlServerId
-output sqlServerName string = data.outputs.sqlServerName
-output sqlServerFqdn string = data.outputs.sqlServerFqdn
-output databaseId string = data.outputs.databaseId
-output databaseName string = data.outputs.databaseName
-output databaseSku string = data.outputs.databaseSku
+output sqlServerId string = data.?outputs.?sqlServerId ?? ''
+output sqlServerName string = data.?outputs.?sqlServerName ?? ''
+output sqlServerFqdn string = data.?outputs.?sqlServerFqdn ?? ''
+output databaseId string = data.?outputs.?databaseId ?? ''
+output databaseName string = data.?outputs.?databaseName ?? ''
+output databaseSku string = data.?outputs.?databaseSku ?? ''

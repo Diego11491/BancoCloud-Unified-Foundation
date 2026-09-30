@@ -1,5 +1,5 @@
-// Identity, registry, secrets boundary and minimum observability for STUDENT LITE.
-// No secret values are created by this module.
+// Identity plus optional registry, secrets boundary and observability for STUDENT LITE.
+// The cost-controlled slice creates only the identity. No secret values are created.
 targetScope = 'resourceGroup'
 
 @description('Unique lowercase project suffix; use letters and digits only')
@@ -28,6 +28,15 @@ param logDailyQuotaGb int = 1
 @description('Keep false in the disposable Student environment so teardown can purge the vault')
 param enablePurgeProtection bool = false
 
+@description('Deploy Log Analytics and Application Insights')
+param deployObservability bool = false
+
+@description('Deploy Azure Container Registry and its AcrPull assignment')
+param deployContainerRegistry bool = false
+
+@description('Deploy Key Vault and its secrets-user assignment')
+param deployKeyVault bool = false
+
 var tags = {
   project: 'bancocloud'
   environment: 'student-lite'
@@ -44,7 +53,7 @@ resource workloadIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023
   tags: tags
 }
 
-resource logWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
+resource logWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = if (deployObservability) {
   name: 'bc-law-${suffix}'
   location: location
   tags: tags
@@ -65,7 +74,7 @@ resource logWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   }
 }
 
-resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = if (deployObservability) {
   name: 'bc-appi-${suffix}'
   location: location
   kind: 'web'
@@ -84,7 +93,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
-resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
+resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' = if (deployContainerRegistry) {
   name: 'bcacr${suffix}'
   location: location
   tags: tags
@@ -98,7 +107,7 @@ resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   }
 }
 
-resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
+resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = if (deployKeyVault) {
   name: 'bc-kv-${suffix}'
   location: location
   tags: tags
@@ -123,7 +132,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   }
 }
 
-resource acrPullAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+resource acrPullAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployContainerRegistry) {
   name: guid(registry.id, workloadIdentity.id, acrPullRoleDefinitionId)
   scope: registry
   properties: {
@@ -133,7 +142,7 @@ resource acrPullAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' 
   }
 }
 
-resource keyVaultSecretsUserAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+resource keyVaultSecretsUserAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployKeyVault) {
   name: guid(keyVault.id, workloadIdentity.id, keyVaultSecretsUserRoleDefinitionId)
   scope: keyVault
   properties: {
@@ -147,13 +156,13 @@ output workloadIdentityId string = workloadIdentity.id
 output workloadIdentityClientId string = workloadIdentity.properties.clientId
 output workloadIdentityPrincipalId string = workloadIdentity.properties.principalId
 
-output logAnalyticsWorkspaceId string = logWorkspace.id
-output applicationInsightsName string = appInsights.name
+output logAnalyticsWorkspaceId string = logWorkspace.?id ?? ''
+output applicationInsightsName string = appInsights.?name ?? ''
 
-output containerRegistryId string = registry.id
-output containerRegistryName string = registry.name
-output containerRegistryLoginServer string = registry.properties.loginServer
+output containerRegistryId string = registry.?id ?? ''
+output containerRegistryName string = registry.?name ?? ''
+output containerRegistryLoginServer string = registry.?properties.?loginServer ?? ''
 
-output keyVaultId string = keyVault.id
-output keyVaultName string = keyVault.name
-output keyVaultUri string = keyVault.properties.vaultUri
+output keyVaultId string = keyVault.?id ?? ''
+output keyVaultName string = keyVault.?name ?? ''
+output keyVaultUri string = keyVault.?properties.?vaultUri ?? ''

@@ -1,0 +1,48 @@
+{
+  "evidence_version": "1.0",
+  "observed_on": "2026-09-29",
+  "phase": "azure-cost-controlled-slice-preflight",
+  "subscription_context": {
+    "role": "Owner",
+    "location": "brazilsouth"
+  },
+  "resource_group": {
+    "name": "rg-bancocloud-student-lite",
+    "required_empty": true,
+    "real_resource_count_after_preflight": 0
+  },
+  "enabled_capabilities": [
+    "managed-identity",
+    "event-hubs",
+    "adls-gen2-medallion-zones",
+    "event-hubs-checkpoint",
+    "minimum-rbac"
+  ],
+  "disabled_capabilities": [
+    "azure-sql",
+    "service-bus",
+    "container-registry",
+    "log-analytics",
+    "application-insights",
+    "key-vault"
+  ],
+  "arm_validation": {
+    "state": "Succeeded",
+    "pass": true
+  },
+  "what_if": {
+    "create": 12,
+    "unsupported": 2,
+    "modify": 0,
+    "delete": 0,
+    "total_changes": 14,
+    "unsupported_scope": "role-assignments-dependent-on-managed-identity",
+    "pass": true
+  },
+  "security": {
+    "subscription_ids_recorded": false,
+    "secrets_recorded": false,
+    "sql_credentials_requested": false
+  },
+  "deployment_performed": false
+}

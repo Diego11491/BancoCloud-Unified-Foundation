@@ -1,5 +1,10 @@
 # Azure Bicep
 
+`main-lite.bicep` es un composition root con guardas de costo. Su configuración
+predeterminada crea únicamente Managed Identity, Event Hubs, ADLS/checkpoint y
+RBAC mínimo. SQL, Service Bus, ACR, observabilidad y Key Vault requieren flags
+explícitos; no se habilitan por accidente.
+
 Primeros módulos previstos:
 
 - resource groups/tags;
@@ -12,6 +17,11 @@ Primeros módulos previstos:
 - monitoring.
 
 No crear Synapse/OpenAI/WAF/Purview/otros recursos hasta la fase que los necesite.
+
+El preflight reproducible está documentado en
+`docs/deployment/08_AZURE_COST_CONTROLLED_SLICE.md` y automatizado por
+`scripts/azure_cost_slice_preflight.ps1`. Ese script valida y ejecuta `what-if`,
+pero no despliega recursos.
 
 `messaging-lite.bicep` trata Quarantine como una zona lateral para registros
 inválidos. Su retención se controla con `quarantineRetentionDays` (30 días por
