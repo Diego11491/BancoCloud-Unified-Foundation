@@ -10,5 +10,5 @@ class AccountsService:
         return [{"account_ref": str(a.account_ref), "customer_ref": str(a.customer_ref), "balance": str(a.balance), "status": a.status}
                 for a in accounts]
 
-    def movements(self, account_ref: UUID, limit: int = 50) -> list[dict]:
-        return self.repository.movements(account_ref, limit)
+    def movements(self, account_ref: UUID, customer_ref: UUID, limit: int = 50) -> list[dict]:
+        return self.repository.movements(account_ref, customer_ref, limit)

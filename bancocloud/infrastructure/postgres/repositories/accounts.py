@@ -22,9 +22,15 @@ class PostgresAccountRepository:
             ).fetchall()
         return [Account(r[0], r[1], Decimal(r[2]), r[3]) for r in rows]
 
-    def movements(self, account_ref: UUID, limit: int = 50) -> list[dict]:
+    def movements(self, account_ref: UUID, customer_ref: UUID, limit: int = 50) -> list[dict]:
         limit = max(1, min(int(limit), 100))
         with connect() as conn:
+            acc = conn.execute("SELECT customer_ref FROM accounts WHERE account_ref=%s", (account_ref,)).fetchone()
+            if not acc:
+                raise LookupError("Account not found")
+            if acc[0] != customer_ref:
+                raise PermissionError("Account belongs to another customer")
+
             rows = conn.execute(
                 "SELECT transaction_id,source_account,destination_account,amount,correlation_id,created_at "
                 "FROM transactions WHERE source_account=%s OR destination_account=%s "

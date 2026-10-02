@@ -27,13 +27,15 @@ class PostgresCardRepository:
             rows = conn.execute(_SELECT + where + " ORDER BY issued_at DESC LIMIT 20", tuple(params)).fetchall()
         return [_card(r) for r in rows]
 
-    def purchase_credit(self, card_ref: UUID, amount: Decimal) -> Card:
+    def purchase_credit(self, card_ref: UUID, expected_customer_ref: UUID, amount: Decimal) -> Card:
         with connect() as conn:
             with conn.transaction():
                 row = conn.execute(_SELECT + " WHERE card_ref=%s FOR UPDATE", (card_ref,)).fetchone()
                 if not row:
                     raise LookupError("Card not found")
                 card = _card(row)
+                if card.customer_ref != expected_customer_ref:
+                    raise PermissionError("Card belongs to another customer")
                 card.validate_credit_purchase(amount)
                 conn.execute("UPDATE cards SET used_balance=used_balance+%s WHERE card_ref=%s", (amount, card_ref))
                 updated = Card(card.card_ref, card.account_ref, card.customer_ref, card.card_type, card.last_four,

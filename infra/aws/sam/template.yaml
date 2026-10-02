@@ -8,6 +8,12 @@ Parameters:
   CoreApiKey:
     Type: String
     NoEcho: true
+  BffIdentitySecret:
+    Type: String
+    NoEcho: true
+  BffIdentityMaxSkewSeconds:
+    Type: String
+    Default: "300"
   CognitoIssuer:
     Type: String
   CognitoAudience:
@@ -23,6 +29,10 @@ Globals:
       Variables:
         CORE_BASE_URL: !Ref CoreBaseUrl
         CORE_API_KEY: !Ref CoreApiKey
+        BFF_IDENTITY_SECRET: !Ref BffIdentitySecret
+        BFF_IDENTITY_MAX_SKEW_SECONDS: !Ref BffIdentityMaxSkewSeconds
+        COGNITO_ISSUER: !Ref CognitoIssuer
+        COGNITO_AUDIENCE: !Ref CognitoAudience
 
 Resources:
   DigitalApi:
