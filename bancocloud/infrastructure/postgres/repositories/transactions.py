@@ -4,17 +4,19 @@ from bancocloud.infrastructure.messaging.outbox import build_transaction_posted,
 from bancocloud.infrastructure.postgres.connection import connect
 
 class PostgresTransactionRepository:
-    def execute_transfer(self, command: TransferCommand, idempotency_key: UUID) -> dict:
+    def execute_transfer(self, command: TransferCommand, expected_customer_ref: UUID, idempotency_key: UUID) -> dict:
         command.validate()
         request_hash = command.request_hash()
         with connect() as conn:
             with conn.transaction():
                 conn.execute("SELECT pg_advisory_xact_lock(%s)", (idempotency_key.int % (2**63),))
                 existing = conn.execute(
-                    "SELECT transaction_id,correlation_id,request_hash FROM transactions WHERE idempotency_key=%s",
+                    "SELECT transaction_id,correlation_id,request_hash,customer_ref FROM transactions WHERE idempotency_key=%s",
                     (idempotency_key,),
                 ).fetchone()
                 if existing:
+                    if existing[3] != expected_customer_ref:
+                        raise PermissionError("Forbidden replay")
                     if existing[2] != request_hash:
                         raise TransferError("Idempotency key already used with another request")
                     return {"transaction_id": str(existing[0]), "correlation_id": str(existing[1]), "replay": True}
@@ -27,10 +29,14 @@ class PostgresTransactionRepository:
                 accounts = {row[0]: row for row in locked}
                 if len(accounts) != 2 or any(accounts[x][3] != "ACTIVE" for x in ids):
                     raise TransferError("Account missing or inactive")
+
+                customer_ref = accounts[command.source_account][1]
+                if customer_ref != expected_customer_ref:
+                    raise PermissionError("Source account belongs to another customer")
+
                 if accounts[command.source_account][2] < command.amount:
                     raise TransferError("Insufficient demo balance")
 
-                customer_ref = accounts[command.source_account][1]
                 region_row = conn.execute("SELECT region FROM customers WHERE customer_ref=%s", (customer_ref,)).fetchone()
                 if not region_row:
                     raise TransferError("Customer region not found")

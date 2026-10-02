@@ -23,7 +23,7 @@ class PostgresLoanRepository:
             rows = conn.execute(_SELECT + where + " ORDER BY disbursed_at DESC LIMIT 20", tuple(params)).fetchall()
         return [_loan(r) for r in rows]
 
-    def create_and_disburse(self, account_ref: UUID, principal: Decimal, annual_rate: Decimal, term_months: int, monthly_payment: Decimal) -> Loan:
+    def create_and_disburse(self, account_ref: UUID, expected_customer_ref: UUID, principal: Decimal, annual_rate: Decimal, term_months: int, monthly_payment: Decimal) -> Loan:
         loan_ref = uuid4()
         with connect() as conn:
             with conn.transaction():
@@ -33,6 +33,8 @@ class PostgresLoanRepository:
                 if not account:
                     raise LookupError("Account not found or inactive")
                 customer_ref = account[0]
+                if customer_ref != expected_customer_ref:
+                    raise PermissionError("Account belongs to another customer")
                 conn.execute(
                     "INSERT INTO loans(loan_ref,customer_ref,account_ref,principal,annual_rate,term_months,monthly_payment,"
                     "outstanding_balance,days_past_due,status) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,0,'CURRENT')",

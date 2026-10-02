@@ -1,0 +1,93 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: BancoCloud Dev Cognito Identity Provider
+
+Parameters:
+  DomainPrefix:
+    Type: String
+    Description: Prefix for the Cognito Managed Login Domain (e.g., bancocloud-auth-dev-uniqueid). Must be globally unique.
+
+Resources:
+  BancoCloudDevUserPool:
+    Type: AWS::Cognito::UserPool
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      UserPoolName: BancoCloudDevUserPool
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+      Schema:
+        - Name: customer_ref
+          AttributeDataType: String
+          Mutable: false
+          Required: false
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+
+  BancoCloudMobileClientDev:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: BancoCloudMobileClientDev
+      UserPoolId: !Ref BancoCloudDevUserPool
+      GenerateSecret: false
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - openid
+      AllowedOAuthFlowsUserPoolClient: true
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs:
+        - bancocloud://auth/callback
+      LogoutURLs:
+        - bancocloud://auth/logout
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      ReadAttributes:
+        - custom:customer_ref
+        - email
+      WriteAttributes:
+        - email
+
+  BancoCloudDevUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Ref DomainPrefix
+      UserPoolId: !Ref BancoCloudDevUserPool
+      ManagedLoginVersion: 2
+
+  BancoCloudDevManagedLoginBranding:
+    Type: AWS::Cognito::ManagedLoginBranding
+    Properties:
+      UserPoolId: !Ref BancoCloudDevUserPool
+      ClientId: !Ref BancoCloudMobileClientDev
+      UseCognitoProvidedValues: true
+
+Outputs:
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref BancoCloudDevUserPool
+
+  UserPoolClientId:
+    Description: Cognito App Client ID
+    Value: !Ref BancoCloudMobileClientDev
+
+  CognitoRegion:
+    Description: AWS Region where Cognito is deployed
+    Value: !Ref AWS::Region
+
+  CognitoDomain:
+    Description: Cognito Managed Login Domain URL
+    Value: !Sub "https://${BancoCloudDevUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"
+
+  CognitoIssuer:
+    Description: Issuer URL for JWT Verification
+    Value: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${BancoCloudDevUserPool}"

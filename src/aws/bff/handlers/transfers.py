@@ -1,3 +1,4 @@
+from src.aws.bff.auth.claims import customer_ref
 from src.aws.bff.clients.core_client import CoreClient
 from src.aws.bff.common.responses import response
 from src.aws.bff.handlers._base import body, run
@@ -14,5 +15,5 @@ def handler(event, context):
         return response(400, {"error": "missing_idempotency_key", "correlation_id": cid}, headers={"X-Correlation-Id": cid})
 
     def action(cid):
-        return client.request("POST", "/transfers", body=body(event), correlation_id=cid, idempotency_key=key)
+        return client.request("POST", "/transfers", body=body(event), correlation_id=cid, idempotency_key=key, customer_ref=customer_ref(event))
     return run(event, action)

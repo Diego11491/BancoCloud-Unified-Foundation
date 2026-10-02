@@ -3,7 +3,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from bancocloud.api.cors import allowed_origins
-from bancocloud.api.dependencies import require_demo_key
+from bancocloud.api.dependencies import require_demo_key, require_identity
 from bancocloud.api.schemas.accounts import OnboardingRequest
 from bancocloud.api.schemas.cards import CardPurchaseRequest
 from bancocloud.api.schemas.cases import AnalystDecisionRequest
@@ -57,8 +57,10 @@ def accounts(customer_ref: UUID | None = None):
 
 
 @app.get("/accounts/{account_ref}/movements", dependencies=_secure)
-def movements(account_ref: UUID, limit: int = 50):
-    return accounts_service.movements(account_ref, limit)
+def movements(account_ref: UUID, limit: int = 50, customer_ref: UUID = Depends(require_identity)):
+    try: return accounts_service.movements(account_ref, customer_ref, limit)
+    except LookupError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise HTTPException(403, str(exc)) from exc
 
 
 @app.post("/onboarding", dependencies=_secure)
@@ -73,9 +75,10 @@ def cards(customer_ref: UUID | None = None, account_ref: UUID | None = None):
 
 
 @app.post("/cards/purchase", dependencies=_secure)
-def purchase(request: CardPurchaseRequest):
-    try: return cards_service.purchase(request.card_ref, request.amount, request.currency.upper())
+def purchase(request: CardPurchaseRequest, customer_ref: UUID = Depends(require_identity)):
+    try: return cards_service.purchase(request.card_ref, customer_ref, request.amount, request.currency.upper())
     except LookupError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise HTTPException(403, str(exc)) from exc
     except CardError as exc: raise HTTPException(400, str(exc)) from exc
 
 
@@ -85,9 +88,10 @@ def loans(customer_ref: UUID | None = None, account_ref: UUID | None = None):
 
 
 @app.post("/loans/apply", dependencies=_secure)
-def apply_loan(request: LoanApplicationRequest):
-    try: return loans_service.apply(request.account_ref, request.amount, request.term_months, request.monthly_income)
+def apply_loan(request: LoanApplicationRequest, customer_ref: UUID = Depends(require_identity)):
+    try: return loans_service.apply(request.account_ref, customer_ref, request.amount, request.term_months, request.monthly_income)
     except LookupError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise HTTPException(403, str(exc)) from exc
     except (LoanError, ValueError) as exc: raise HTTPException(400, str(exc)) from exc
 
 
@@ -107,10 +111,12 @@ def decide(case_id: UUID, request: AnalystDecisionRequest):
 
 
 @app.post("/transfers", dependencies=_secure)
-def transfer(request: TransferRequest, idempotency_key: UUID = Header(...)):
+def transfer(request: TransferRequest, idempotency_key: UUID = Header(...), customer_ref: UUID = Depends(require_identity)):
     command = TransferCommand(request.source_account, request.destination_account, request.amount,
                               request.device_ref, request.beneficiary_ref)
-    try: return transfers_service.transfer(command, idempotency_key)
+    try: return transfers_service.transfer(command, customer_ref, idempotency_key)
+    except LookupError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise HTTPException(403, str(exc)) from exc
     except TransferError as exc:
         code = 409 if "Idempotency key" in str(exc) else 400
         raise HTTPException(code, str(exc)) from exc

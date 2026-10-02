@@ -17,8 +17,8 @@ class CardsService:
     def list_cards(self, customer_ref: UUID | None = None, account_ref: UUID | None = None) -> list[dict]:
         return [self._view(c) for c in self.repository.list(customer_ref, account_ref)]
 
-    def purchase(self, card_ref: UUID, amount: Decimal, currency: str = "PEN") -> dict:
-        card = self.repository.purchase_credit(card_ref, amount)
+    def purchase(self, card_ref: UUID, customer_ref: UUID, amount: Decimal, currency: str = "PEN") -> dict:
+        card = self.repository.purchase_credit(card_ref, customer_ref, amount)
         result = self._view(card)
         result.update({"amount": str(amount), "currency": currency, "status": "APPROVED"})
         return result

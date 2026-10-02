@@ -7,11 +7,11 @@ from bancocloud.repositories.loans import LoanRepository
 class LoansService:
     def __init__(self, repository: LoanRepository): self.repository = repository
 
-    def apply(self, account_ref: UUID, amount: Decimal, term_months: int, monthly_income: Decimal) -> dict:
+    def apply(self, account_ref: UUID, customer_ref: UUID, amount: Decimal, term_months: int, monthly_income: Decimal) -> dict:
         approved, payment, dti = evaluate_dti(amount, term_months, monthly_income, DEFAULT_ANNUAL_RATE)
         if not approved:
             raise ValueError(f"DTI ratio {dti:.2%} exceeds {MAX_DTI:.0%} limit")
-        loan = self.repository.create_and_disburse(account_ref, amount, DEFAULT_ANNUAL_RATE, term_months, payment)
+        loan = self.repository.create_and_disburse(account_ref, customer_ref, amount, DEFAULT_ANNUAL_RATE, term_months, payment)
         return {"loan_ref": str(loan.loan_ref), "monthly_payment": str(payment), "dti_ratio": float(dti.quantize(Decimal('0.0001'))), "status": "APPROVED"}
 
     def list_loans(self, customer_ref: UUID | None = None, account_ref: UUID | None = None) -> list[dict]:

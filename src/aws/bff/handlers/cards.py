@@ -5,6 +5,6 @@ client = CoreClient()
 def handler(event, context):
     def action(cid):
         if event.get("requestContext", {}).get("http", {}).get("method") == "POST":
-            return client.request("POST", "/cards/purchase", body=body(event), correlation_id=cid)
-        return client.request("GET", "/cards", query={"customer_ref": customer_ref(event)}, correlation_id=cid)
+            return client.request("POST", "/cards/purchase", body=body(event), correlation_id=cid, customer_ref=customer_ref(event))
+        return client.request("GET", "/cards", query={"customer_ref": customer_ref(event)}, correlation_id=cid, customer_ref=customer_ref(event))
     return run(event, action)
