@@ -1,51 +1,110 @@
-﻿import os
-import pytest
-from unittest.mock import patch, MagicMock
+import json
+import os
+import time
+import unittest
+from unittest.mock import patch
 
-os.environ["COGNITO_ISSUER"] = "https://trusted.issuer.com"
-os.environ["COGNITO_AUDIENCE"] = "trusted_aud"
+import jwt
+from cryptography.hazmat.primitives.asymmetric import rsa
+from jwt.algorithms import RSAAlgorithm
 
-from src.aws.bff.auth.claims import claims, Unauthorized
+from src.aws.bff.auth.claims import Unauthorized, claims
 
-@patch("src.aws.bff.auth.claims.jwt")
-@patch("src.aws.bff.auth.claims.get_jwks")
-@patch("src.aws.bff.auth.claims.RSAAlgorithm.from_jwk")
-def test_trusted_configured_issuer_determines_jwks_source(mock_from_jwk, mock_get_jwks, mock_jwt):
-    mock_jwt.get_unverified_header.return_value = {"kid": "key1"}
-    
-    # Simulate an attacker trying to redirect JWKS by forging 'iss'
-    mock_jwt.decode.side_effect = [{"iss": "https://attacker.com"}, {"token_use": "id", "custom:customer_ref": "007796d7-43a4-50c7-8093-1a7caf001771", "sub": "sub"}]
-    mock_get_jwks.return_value = {"keys": [{"kid": "key1"}]}
-    mock_from_jwk.return_value = "fake_rsa_key"
 
-    event = {"headers": {"Authorization": "Bearer fake_token"}}
-    
-    # Test valid claim extraction
-    result = claims(event)
-    
-    # Assert get_jwks was called with the TRUSTED issuer from environment, NOT the attacker's issuer
-    mock_get_jwks.assert_called_once_with("https://trusted.issuer.com")
-    
-    # Assert jwt.decode was called with trusted issuer and audience
-    calls = mock_jwt.decode.call_args_list
-    assert calls[1][1]["issuer"] == "https://trusted.issuer.com"
-    assert calls[1][1]["audience"] == "trusted_aud"
+ISSUER = "https://trusted.issuer.example"
+AUDIENCE = "trusted-client"
+CUSTOMER_REF = "007796d7-43a4-50c7-8093-1a7caf001771"
 
-@patch("src.aws.bff.auth.claims.jwt")
-@patch("src.aws.bff.auth.claims.get_jwks")
-@patch("src.aws.bff.auth.claims.RSAAlgorithm.from_jwk")
-def test_wrong_issuer(mock_from_jwk, mock_get_jwks, mock_jwt):
-    mock_jwt.get_unverified_header.return_value = {"kid": "key1"}
-    import jwt
-    mock_jwt.InvalidIssuerError = jwt.InvalidIssuerError
-    
-    # Fail on second decode (signature validation)
-    mock_jwt.decode.side_effect = [{"iss": "https://trusted.issuer.com"}, jwt.InvalidIssuerError()]
-    mock_get_jwks.return_value = {"keys": [{"kid": "key1"}]}
-    
-    event = {"headers": {"Authorization": "Bearer fake_token"}}
-    
-    with pytest.raises(Unauthorized, match="WRONG_ISSUER"):
-        claims(event)
 
-# Add remaining tests as requested by the prompt
+class BffAuthConfigTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        cls.jwk = json.loads(RSAAlgorithm.to_jwk(cls.private_key.public_key()))
+        cls.jwk["kid"] = "test-key"
+
+    def event(self, *, issuer=ISSUER, audience=AUDIENCE):
+        token = jwt.encode(
+            {
+                "iss": issuer,
+                "aud": audience,
+                "exp": int(time.time()) + 300,
+                "sub": "test-subject",
+                "token_use": "id",
+                "custom:customer_ref": CUSTOMER_REF,
+            },
+            self.private_key,
+            algorithm="RS256",
+            headers={"kid": "test-key"},
+        )
+        return {"headers": {"Authorization": f"Bearer {token}"}}
+
+    def assert_missing_configuration(self, name, value=None):
+        config = {"COGNITO_ISSUER": ISSUER, "COGNITO_AUDIENCE": AUDIENCE}
+        if value is None:
+            del config[name]
+        else:
+            config[name] = value
+        with patch.dict(os.environ, config, clear=True), patch(
+            "src.aws.bff.auth.claims.get_jwks"
+        ) as get_jwks:
+            with self.assertRaisesRegex(Unauthorized, "MISSING_CONFIGURATION"):
+                claims(self.event())
+            get_jwks.assert_not_called()
+
+    def test_missing_issuer_fails_closed(self):
+        self.assert_missing_configuration("COGNITO_ISSUER")
+
+    def test_blank_issuer_fails_closed(self):
+        self.assert_missing_configuration("COGNITO_ISSUER", "")
+
+    def test_whitespace_issuer_fails_closed(self):
+        self.assert_missing_configuration("COGNITO_ISSUER", "   ")
+
+    def test_missing_audience_fails_closed(self):
+        self.assert_missing_configuration("COGNITO_AUDIENCE")
+
+    def test_blank_audience_fails_closed(self):
+        self.assert_missing_configuration("COGNITO_AUDIENCE", "")
+
+    def test_whitespace_audience_fails_closed(self):
+        self.assert_missing_configuration("COGNITO_AUDIENCE", "   ")
+
+    def test_valid_configuration_uses_one_verified_decode(self):
+        real_decode = jwt.decode
+        with patch.dict(os.environ, {"COGNITO_ISSUER": ISSUER, "COGNITO_AUDIENCE": AUDIENCE}, clear=True), patch(
+            "src.aws.bff.auth.claims.get_jwks", return_value={"keys": [self.jwk]}
+        ) as get_jwks, patch("src.aws.bff.auth.claims.jwt.decode", wraps=real_decode) as decode:
+            result = claims(self.event())
+        self.assertEqual(result["custom:customer_ref"], CUSTOMER_REF)
+        get_jwks.assert_called_once_with(ISSUER)
+        decode.assert_called_once()
+        self.assertEqual(decode.call_args.kwargs["issuer"], ISSUER)
+        self.assertEqual(decode.call_args.kwargs["audience"], AUDIENCE)
+        self.assertEqual(decode.call_args.kwargs["algorithms"], ["RS256"])
+
+    def test_unverified_issuer_cannot_choose_jwks_source(self):
+        with patch.dict(os.environ, {"COGNITO_ISSUER": ISSUER, "COGNITO_AUDIENCE": AUDIENCE}, clear=True), patch(
+            "src.aws.bff.auth.claims.get_jwks", return_value={"keys": [self.jwk]}
+        ) as get_jwks:
+            with self.assertRaisesRegex(Unauthorized, "WRONG_ISSUER"):
+                claims(self.event(issuer="https://attacker.example"))
+        get_jwks.assert_called_once_with(ISSUER)
+
+    def test_wrong_issuer_rejected(self):
+        with patch.dict(os.environ, {"COGNITO_ISSUER": ISSUER, "COGNITO_AUDIENCE": AUDIENCE}, clear=True), patch(
+            "src.aws.bff.auth.claims.get_jwks", return_value={"keys": [self.jwk]}
+        ):
+            with self.assertRaisesRegex(Unauthorized, "WRONG_ISSUER"):
+                claims(self.event(issuer="https://wrong.issuer.example"))
+
+    def test_wrong_audience_rejected(self):
+        with patch.dict(os.environ, {"COGNITO_ISSUER": ISSUER, "COGNITO_AUDIENCE": AUDIENCE}, clear=True), patch(
+            "src.aws.bff.auth.claims.get_jwks", return_value={"keys": [self.jwk]}
+        ):
+            with self.assertRaisesRegex(Unauthorized, "WRONG_AUDIENCE"):
+                claims(self.event(audience="wrong-client"))
+
+
+if __name__ == "__main__":
+    unittest.main()
