@@ -52,12 +52,14 @@ def claims(event: dict) -> dict:
         if not kid:
             raise Exception("UNKNOWN_KID")
             
-        expected_issuer = os.environ.get("COGNITO_ISSUER")
+        expected_issuer = os.environ.get("COGNITO_ISSUER", "").strip()
         if not expected_issuer:
-            expected_issuer = "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_JYZ5WeTvx"
-        expected_audience = os.environ.get("COGNITO_AUDIENCE")
+            print("AUTH_RESULT — MISSING_CONFIGURATION")
+            raise Unauthorized("MISSING_CONFIGURATION")
+        expected_audience = os.environ.get("COGNITO_AUDIENCE", "").strip()
         if not expected_audience:
-            expected_audience = "e7ohrvctbsco01uo2m37v691t"
+            print("AUTH_RESULT — MISSING_CONFIGURATION")
+            raise Unauthorized("MISSING_CONFIGURATION")
             
         jwks = get_jwks(expected_issuer)
         if not jwks:
