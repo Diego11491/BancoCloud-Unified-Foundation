@@ -129,11 +129,13 @@ output eventHubNamespaceName string = messaging.?outputs.?eventHubNamespaceName 
 output eventHubFullyQualifiedNamespace string = messaging.?outputs.?eventHubFullyQualifiedNamespace ?? ''
 output eventHubName string = messaging.?outputs.?eventHubName ?? ''
 output eventHubConsumerGroupName string = messaging.?outputs.?eventHubConsumerGroupName ?? ''
+output lakeConsumerGroupName string = messaging.?outputs.?lakeConsumerGroupName ?? ''
 output serviceBusNamespaceName string = messaging.?outputs.?serviceBusNamespaceName ?? ''
 output highFraudQueueName string = messaging.?outputs.?queueName ?? ''
 output storageAccountName string = messaging.?outputs.?storageAccountName ?? ''
 output blobAccountUrl string = messaging.?outputs.?blobAccountUrl ?? ''
 output checkpointContainerName string = messaging.?outputs.?checkpointContainerName ?? ''
+output bronzeCheckpointContainerName string = messaging.?outputs.?bronzeCheckpointContainerName ?? ''
 output quarantineContainerName string = messaging.?outputs.?quarantineContainerName ?? ''
 output quarantineRetentionDaysApplied int = messaging.?outputs.?quarantineRetentionDaysApplied ?? 0
 
