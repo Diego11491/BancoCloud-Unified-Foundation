@@ -4,7 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from uuid import UUID
 
-from bancocloud.azure_medallion import land_bronze, promote
+from bancocloud.azure_medallion import _upload_immutable, land_bronze, promote
 
 
 class Exists(Exception):
@@ -87,6 +87,31 @@ class MedallionTests(unittest.TestCase):
         self.assertEqual(row["amount_pen"], 75)
         self.assertIn(f"{prefix}/manifest.json", gold)
         self.assertEqual(promote(self.storage, Exists), result)
+
+    def test_replay_accepts_legacy_windows_line_endings_without_overwriting(self):
+        for event in (self.event("1"), self.event("2", 50)):
+            land_bronze(self.partition, event, self.storage.get_container_client("bronze"), Exists)
+        result = promote(self.storage, Exists)
+        for zone in ("silver", "gold", "quarantine"):
+            blobs = self.storage.get_container_client(zone).blobs
+            for name, payload in list(blobs.items()):
+                blobs[name] = payload.replace(b"\n", b"\r\n")
+        previous = {
+            zone: dict(self.storage.get_container_client(zone).blobs)
+            for zone in ("silver", "gold", "quarantine")
+        }
+
+        self.assertEqual(promote(self.storage, Exists), result)
+        for zone, blobs in previous.items():
+            self.assertEqual(self.storage.get_container_client(zone).blobs, blobs)
+
+    def test_immutable_upload_rejects_content_change_and_canonicalizes_new_lines(self):
+        container = self.storage.get_container_client("silver")
+        name = "runs/demo/events.jsonl"
+        _upload_immutable(container, name, b'{"amount":1}\r\n', Exists)
+        self.assertEqual(container.blobs[name], b'{"amount":1}\n')
+        with self.assertRaisesRegex(RuntimeError, "Conflicting immutable"):
+            _upload_immutable(container, name, b'{"amount":2}\r\n', Exists)
 
     def test_conflicting_event_identity_never_publishes_gold(self):
         bronze = self.storage.get_container_client("bronze")

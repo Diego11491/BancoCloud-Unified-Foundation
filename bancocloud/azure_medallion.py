@@ -38,11 +38,18 @@ def land_bronze(partition_context, event, bronze_container, resource_exists):
 
 
 def _upload_immutable(container, name, payload, resource_exists):
+    # JSON artifacts can be produced on Windows or Linux. Keep the first blob
+    # intact, but compare logical line endings on a retry across platforms.
+    if name.endswith((".json", ".jsonl")):
+        payload = payload.replace(b"\r\n", b"\n")
     try:
         container.upload_blob(name, payload, overwrite=False)
     except resource_exists:
         # A previous promotion may have stopped before publishing its manifest.
-        if container.download_blob(name).readall() != payload:
+        existing = container.download_blob(name).readall()
+        if name.endswith((".json", ".jsonl")):
+            existing = existing.replace(b"\r\n", b"\n")
+        if existing != payload:
             raise RuntimeError(f"Conflicting immutable Medallion artifact: {name}")
 
 
@@ -150,7 +157,10 @@ def run_promotion():
     from azure.storage.blob import BlobServiceClient
 
     account_url = _required("AZURE_BLOB_ACCOUNT_URL")
-    credential = DefaultAzureCredential(exclude_interactive_browser_credential=True)
+    credential = DefaultAzureCredential(
+        managed_identity_client_id=os.environ.get("AZURE_MANAGED_IDENTITY_CLIENT_ID") or None,
+        exclude_interactive_browser_credential=True,
+    )
     try:
         service = BlobServiceClient(account_url=account_url, credential=credential)
         print(json.dumps(promote(service, ResourceExistsError), sort_keys=True))
