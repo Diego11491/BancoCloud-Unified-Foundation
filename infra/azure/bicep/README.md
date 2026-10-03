@@ -32,3 +32,12 @@ El módulo también crea el consumer group `fraud-engine`, el container privado
 worker y Blob Data Contributor limitado al checkpoint. El principal local opcional
 recibe temporalmente Sender/Receiver y acceso al checkpoint para el E2E híbrido; se
 revoca al cerrar la demo. No se crean connection strings ni secretos.
+
+El corte Medallion agrega `lake-writer` y `bronze-checkpoints`, ambos independientes
+del consumidor de fraude, y asignaciones de la Managed Identity acotadas a Bronze,
+Silver, Gold y Quarantine. No incorpora nuevas familias de servicios facturables.
+En el Resource Group ya desplegado, `main-lite.bicep` predice modificaciones
+en recursos existentes. Para el incremento usar `medallion-additive.bicep`,
+que referencia esos recursos y solo crea el consumidor, el checkpoint y cinco
+asignaciones de RBAC por contenedor. Su preflight y despliegue se describen en
+`docs/deployment/09_AZURE_MEDALLION_VERTICAL_SLICE.md`.

@@ -63,11 +63,11 @@ correlación y recuperación del outbox ante la caída del consumidor.
 
 - [x] Ratificar ADR-0005 para identidad, conectividad, SQL y despliegue en dos etapas. **TEAM ACCEPTED / DEPLOYMENT GATED**
 - [x] Separar el Bicep en un primer corte de costo que despliegue solo Managed Identity, Event Hubs, Storage/checkpoint y RBAC mínimo. **WHAT-IF PASS — 12 CREATE / 2 UNSUPPORTED RBAC / 0 MODIFY-DELETE / NOT DEPLOYED**
-- [ ] Integrar Event Hubs con identidad y checkpoint duradero. **ADAPTERS READY / REAL AZURE E2E PENDING**
+- [x] Integrar Event Hubs con identidad y checkpoint duradero. **E2E HÍBRIDO OBSERVADO 02/10/2026:** cuatro eventos recibidos/leídos, worker local con un HIGH y checkpoint de las particiones 0/1 en ADLS; core y PostgreSQL permanecen locales.
 - [ ] Desplegar Container App `fraud-engine`. **CLOUD PENDING**
 - [ ] Crear Azure SQL con schemas separados para profiles/cases. **CLOUD PENDING**
 - [ ] Integrar HIGH con Service Bus. **CLOUD PENDING**
-- [ ] Aterrizar Bronze en ADLS y promover Silver/Gold. **CLOUD PENDING**
+- [ ] Aterrizar Bronze en ADLS y promover Silver/Gold. **CÓDIGO + IaC LISTOS; E2E AZURE PENDIENTE**. Ver `docs/deployment/09_AZURE_MEDALLION_VERTICAL_SLICE.md`; no marcar PASS antes de verificar el manifiesto y los conteos reales.
 - [ ] Configurar Key Vault, Managed Identity y telemetría mínima. **CLOUD PENDING**
 
 ## T6 — Cases

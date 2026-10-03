@@ -64,13 +64,20 @@ El PASS local no equivale a despliegue cloud ni autoriza a exponer el Core a Int
 
 ## Próximo gate autorizado
 
-La siguiente unidad Azure es **T5-AZURE-COST-CONTROLLED-DEPLOYMENT**: registrar
-estimación de costo, responsable y hora de teardown; revisar nuevamente el Resource
-Group vacío y ejecutar el primer `create` manual únicamente con Managed Identity,
-Event Hubs, Storage/checkpoint y RBAC mínimo. Después se ejecutará
-Core→Event Hubs→worker local con contrato, idempotencia, `correlation_id` y
-recuperación ante reentrega. Container Apps continúa bloqueado hasta disponer de
-persistencia Azure compatible.
+**Evidencia nueva del 02/10/2026:** el primer corte Azure se desplegó en el grupo
+Student de `brazilsouth`. El smoke híbrido registró cuatro eventos en Event Hubs,
+cuatro procesamientos del worker local (un HIGH), publicación Outbox, score y caso
+en PostgreSQL local, y checkpoints 0/1 en el contenedor ADLS. Esto demuestra
+mensajería y checkpoint reales; no demuestra fraude, Medallion, ML o GenAI
+alojados en Azure. La extensión Medallion está preparada en código e IaC, pero
+mantiene gate cloud pendiente hasta validar su manifiesto y conciliación reales.
+
+La siguiente unidad Azure es **T5-AZURE-MEDALLION-DEPLOYMENT**: validar el Bicep
+incremental sobre el Resource Group existente, revisar el `what-if` y los scopes
+RBAC, desplegar solo el consumer group y el checkpoint adicionales, y demostrar
+Bronze→Silver/Gold/Quarantine con manifiesto y conciliación en ADLS. Registrar
+costo, responsable y hora de teardown. Container Apps continúa bloqueado hasta
+disponer de persistencia Azure compatible.
 
 ## Riesgos conocidos
 

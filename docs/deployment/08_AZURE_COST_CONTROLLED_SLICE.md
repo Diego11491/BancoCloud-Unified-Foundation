@@ -70,6 +70,11 @@ región `brazilsouth`: validación ARM `Succeeded`, 12 cambios `Create`, 2 cambi
 desplegados. El resumen sanitizado está en
 `evidence/azure-cost-controlled-slice-summary.json`.
 
+Este resultado es histórico y corresponde al primer corte. Tras desplegarlo y
+probar Event Hubs, la extensión Medallion añade un segundo consumer group y un
+checkpoint independiente sobre los servicios existentes; su gate incremental
+se documenta en `09_AZURE_MEDALLION_VERTICAL_SLICE.md`.
+
 ## Decisión posterior
 
 Un preflight exitoso no autoriza el despliegue. Antes de ejecutar `create` se

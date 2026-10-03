@@ -71,6 +71,11 @@ resource fraudConsumerGroup 'Microsoft.EventHub/namespaces/eventhubs/consumergro
   parent: transactions
   properties: {}
 }
+resource lakeConsumerGroup 'Microsoft.EventHub/namespaces/eventhubs/consumergroups@2024-01-01' = if (deployEventStreaming) {
+  name: 'lake-writer'
+  parent: transactions
+  properties: {}
+}
 resource bus 'Microsoft.ServiceBus/namespaces@2024-01-01' = if (deployServiceBus) {
   name: 'bcsb${suffix}'
   location: location
@@ -127,6 +132,12 @@ resource gold 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05
 
 resource eventHubCheckpoints 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = if (deployDataLake) {
   name: 'eventhub-checkpoints'
+  parent: blobService
+  properties: { publicAccess: 'None' }
+}
+// Each independent consumer group has its own checkpoint container.
+resource bronzeCheckpoints 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = if (deployDataLake && deployEventStreaming) {
+  name: 'bronze-checkpoints'
   parent: blobService
   properties: { publicAccess: 'None' }
 }
@@ -191,6 +202,58 @@ resource checkpointWriterRole 'Microsoft.Authorization/roleAssignments@2022-04-0
   }
 }
 
+resource bronzeCheckpointWriterRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployDataLake && deployEventStreaming) {
+  name: guid(bronzeCheckpoints.id, workloadIdentityPrincipalId, storageBlobDataContributorRoleDefinitionId)
+  scope: bronzeCheckpoints
+  properties: {
+    principalId: workloadIdentityPrincipalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleDefinitionId)
+  }
+}
+
+// The future managed workload reads Bronze, writes Silver/Gold/Quarantine and
+// uses the same receiver assignment scoped to the transaction Event Hub.
+resource bronzeWriterRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployDataLake && deployEventStreaming) {
+  name: guid(bronze.id, workloadIdentityPrincipalId, storageBlobDataContributorRoleDefinitionId)
+  scope: bronze
+  properties: {
+    principalId: workloadIdentityPrincipalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleDefinitionId)
+  }
+}
+
+resource silverWriterRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployDataLake && deployEventStreaming) {
+  name: guid(silver.id, workloadIdentityPrincipalId, storageBlobDataContributorRoleDefinitionId)
+  scope: silver
+  properties: {
+    principalId: workloadIdentityPrincipalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleDefinitionId)
+  }
+}
+
+resource goldWriterRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployDataLake && deployEventStreaming) {
+  name: guid(gold.id, workloadIdentityPrincipalId, storageBlobDataContributorRoleDefinitionId)
+  scope: gold
+  properties: {
+    principalId: workloadIdentityPrincipalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleDefinitionId)
+  }
+}
+
+resource quarantineWriterRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployDataLake && deployEventStreaming) {
+  name: guid(quarantine.id, workloadIdentityPrincipalId, storageBlobDataContributorRoleDefinitionId)
+  scope: quarantine
+  properties: {
+    principalId: workloadIdentityPrincipalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleDefinitionId)
+  }
+}
+
 resource localIntegrationSenderRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployEventStreaming && !empty(localIntegrationPrincipalId)) {
   name: guid(transactions.id, localIntegrationPrincipalId, eventHubsDataSenderRoleDefinitionId)
   scope: transactions
@@ -230,6 +293,7 @@ output eventHubFullyQualifiedNamespace string = empty(deployedEventHubNamespaceN
   : '${deployedEventHubNamespaceName}.servicebus.windows.net'
 output eventHubName string = transactions.?name ?? ''
 output eventHubConsumerGroupName string = fraudConsumerGroup.?name ?? ''
+output lakeConsumerGroupName string = lakeConsumerGroup.?name ?? ''
 output serviceBusNamespaceName string = bus.?name ?? ''
 output queueName string = highQueue.?name ?? ''
 output storageAccountName string = deployedStorageAccountName
@@ -237,5 +301,6 @@ output blobAccountUrl string = empty(deployedStorageAccountName)
   ? ''
   : 'https://${deployedStorageAccountName}.blob.${environment().suffixes.storage}'
 output checkpointContainerName string = eventHubCheckpoints.?name ?? ''
+output bronzeCheckpointContainerName string = bronzeCheckpoints.?name ?? ''
 output quarantineContainerName string = quarantine.?name ?? ''
 output quarantineRetentionDaysApplied int = deployDataLake ? quarantineRetentionDays : 0
