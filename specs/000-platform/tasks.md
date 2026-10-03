@@ -62,12 +62,12 @@ correlación y recuperación del outbox ante la caída del consumidor.
 ## T5 — Azure LITE
 
 - [x] Ratificar ADR-0005 para identidad, conectividad, SQL y despliegue en dos etapas. **TEAM ACCEPTED / DEPLOYMENT GATED**
-- [x] Separar el Bicep en un primer corte de costo que despliegue solo Managed Identity, Event Hubs, Storage/checkpoint y RBAC mínimo. **WHAT-IF PASS — 12 CREATE / 2 UNSUPPORTED RBAC / 0 MODIFY-DELETE / NOT DEPLOYED**
+- [x] Separar el Bicep en un primer corte de costo que despliegue solo Managed Identity, Event Hubs, Storage/checkpoint y RBAC mínimo. **DESPLEGADO EN BRAZIL SOUTH; what-if histórico: 12 CREATE / 2 UNSUPPORTED RBAC / 0 MODIFY-DELETE**
 - [x] Integrar Event Hubs con identidad y checkpoint duradero. **E2E HÍBRIDO OBSERVADO 02/10/2026:** cuatro eventos recibidos/leídos, worker local con un HIGH y checkpoint de las particiones 0/1 en ADLS; core y PostgreSQL permanecen locales.
 - [ ] Desplegar Container App `fraud-engine`. **CLOUD PENDING**
 - [ ] Crear Azure SQL con schemas separados para profiles/cases. **CLOUD PENDING**
 - [ ] Integrar HIGH con Service Bus. **CLOUD PENDING**
-- [ ] Aterrizar Bronze en ADLS y promover Silver/Gold. **CÓDIGO + IaC LISTOS; E2E AZURE PENDIENTE**. Ver `docs/deployment/09_AZURE_MEDALLION_VERTICAL_SLICE.md`; no marcar PASS antes de verificar el manifiesto y los conteos reales.
+- [x] Aterrizar Bronze en ADLS y promover Silver/Gold. **E2E HÍBRIDO VERIFICADO 03/10/2026:** consumidor Bronze local; Job manual de Azure `Succeeded`, Gold inexistente antes de ejecutarlo, 21 Bronze → 21 Silver, 0 duplicados, 0 rechazados y manifiesto nuevo. Ver `docs/deployment/evidence/azure-medallion-cloud-run.json`.
 - [ ] Configurar Key Vault, Managed Identity y telemetría mínima. **CLOUD PENDING**
 
 ## T6 — Cases
@@ -93,7 +93,8 @@ correlación y recuperación del outbox ante la caída del consumidor.
 - [x] Generar Gold local por día/canal y reconciliar conteos. **LOCAL VERIFIED**
 - [x] Generar Gold dimensional reproducible para Power BI con 5960 perfiles, 10 000 transacciones/evaluaciones, etiquetas separadas y 93 casos HIGH. **LOCAL VERIFIED**
 - [x] Declarar Quarantine privada en ADLS con output y lifecycle policy parametrizada. **LOCAL VERIFIED — BUILD/LINT PASS 27/09/2026**
-- [ ] Implementar ADLS/Synapse Serverless para el cold path cloud. **CLOUD PENDING**
+- [x] Implementar ADLS y promoción batch para el cold path cloud. **CLOUD VERIFIED: Job manual de Azure; 21 eventos sintéticos**.
+- [ ] Consultar Gold mediante Synapse Serverless. **CLOUD PENDING**.
 - [ ] Crear el archivo Power BI Desktop sobre Gold; morosidad/rentabilidad requieren fuentes todavía no modeladas. **LOCAL READY / DASHBOARD PENDING**
 
 ## T9 — GenAI
@@ -124,7 +125,9 @@ correlación y recuperación del outbox ante la caída del consumidor.
 
 ## Siguiente task exacta
 
-**T5-AZURE-COST-CONTROLLED-DEPLOYMENT:** registrar estimación de costo, responsable
-y hora de teardown; reconfirmar el Resource Group vacío y ejecutar manualmente el
-primer despliegue de Managed Identity, Event Hubs, Storage/checkpoint y RBAC mínimo.
-No desplegar el worker en Container Apps hasta implementar persistencia Azure.
+**T5-AZURE-FRAUD-HOTPATH-PREFLIGHT:** revisar costo, cuotas, identidad, persistencia
+de scores/casos y el alcance de Service Bus/Azure SQL antes de alojar el motor de
+fraude en Azure. El Job Medallion ya procesa Gold en Azure; el core y el
+consumidor Bronze aún funcionan localmente. ML online y GenAI cloud conservan
+gates independientes. Registrar el teardown de ACR Basic y entornos Container
+Apps; las etiquetas de expiración no lo automatizan.

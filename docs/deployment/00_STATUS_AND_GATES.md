@@ -41,11 +41,11 @@ El PASS local no equivale a despliegue cloud ni autoriza a exponer el Core a Int
 | 0 Arquitectura | Fuente de verdad y ADR-0001/0002 preservados | Aceptación del equipo pendiente |
 | 1 Datos/contratos | Excel revalidado por hash; 5960 perfiles; 10k eventos; etiquetas separadas; cuatro schemas usados; 0 rechazo en reproyección local | Verificar el escenario de datos con el equipo, calidad y representatividad; no interpretar etiquetas generadas como fraude real |
 | 2 Core/outbox | Gate Docker legacy completado; entrypoint modular y migración automática declarados con regresión estática | Revalidar Docker modular: migrate=Exited(0), cuentas/productos, transferencia, casos, outbox y recuperación; no reutilizar autenticación demo fuera del laboratorio |
-| 3 Azure hot path | FraudService desacoplado; sender/worker/checkpoint listos; corte Managed Identity + Event Hubs + checkpoint/Storage validado por what-if | Aprobar costo y teardown antes del primer despliegue manual; después ejecutar E2E híbrido real; Container Apps espera Azure SQL y Service Bus |
-| 4 Cold path | Bronze/Silver/Gold local, cuarentena y reconciliación; Quarantine privada y lifecycle declaradas; build/lint PASS | ADLS ingestion, vistas Synapse y Power BI pendientes; BI de morosidad/rentabilidad exige fuentes de préstamos/costos aún no modeladas |
+| 3 Azure hot path | Event Hubs y checkpoint desplegados; cuatro eventos procesados por el fraud worker local el 02/10 | Fraud engine alojado en Azure, Azure SQL y Service Bus para HIGH pendientes |
+| 4 Cold path | Bronze en ADLS y promoción Silver/Gold por Job manual en Azure verificadas el 03/10: 21/21, 0 rechazados, 0 duplicados | Synapse y Power BI cloud pendientes; morosidad/rentabilidad requieren fuentes todavía no modeladas |
 | 5 AWS | Contrato core disponible para BFF; interfaz AWS→core deshabilitada | Cognito, API Gateway, Lambda, S3/CloudFront y método seguro AWS→core pendientes; no exponer el core local por Internet sin diseño aprobado |
 | 6 Analistas/GenAI | Registro de decisión humana por contrato; resumen evidence-only local, fallback, rechazo de PII/decisiones y smoke con caso HIGH real | Staff IAM, portal y evaluación con un deployment aprobado pendientes; GenAI no bloquea casos |
-| 7 IaC/CI | Módulos Bicep, GitHub Actions Run #1 y preflight de costo PASS: 12 Create, 2 Unsupported RBAC, 0 Modify/Delete y 0 recursos desplegados | Primer despliegue manual, SAM, OIDC y scans pendientes; CI no despliega recursos |
+| 7 IaC/CI | Bicep validado; primer corte y extensión Medallion desplegados manualmente; ACR Basic e imagen versionada para Job | CD manual con OIDC, scans y teardown pendientes; CI no despliega recursos |
 | 8/9 Resiliencia/demo | Unitarios, reconciliación, replay real, smoke y recuperación del consumidor ejecutados | Métricas bajo carga, nube y teardown cloud pendientes |
 
 **Regla de liberación:** el código local no equivale a despliegue bancario ni a entorno cloud operativo. Ningún recurso cloud se crea sin pasar validación local, preview de IaC, decisión de región/cuota y estrategia de apagado.
@@ -62,22 +62,27 @@ El PASS local no equivale a despliegue cloud ni autoriza a exponer el Core a Int
 | Control negativo | PASS | El gate rechaza la corrida si Logistic Regression con labels de train mezclados supera el límite gobernado |
 | Resultado | OFFLINE ONLY | El champion y las métricas quedan en el reporte reproducible local; no se serializa ni promueve; `rules-only-v1` permanece online |
 
-## Próximo gate autorizado
+## Evidencia Azure Medallion — 03/10/2026 UTC
 
-**Evidencia nueva del 02/10/2026:** el primer corte Azure se desplegó en el grupo
+El Container Apps Job manual `bc-medallion-batch-dv260929` terminó en `Succeeded`
+en la ejecución `bc-medallion-batch-dv260929-lffjhes`. Gold no contenía antes el
+prefijo `runs/e3f5dd1180830b048619/`; después el Job publicó manifiesto,
+conciliación y agregado por día/canal, junto con Silver y un archivo Quarantine
+vacío. Manifiesto: Bronze=21, Silver=21, duplicate=0, quarantine=0. Core,
+publisher y consumidor Bronze siguieron locales; ML, Azure OpenAI, Synapse y
+fraud engine alojado en Azure siguen pendientes. Evidencia sanitizada:
+`evidence/azure-medallion-cloud-run.json`.
+
+## Gate histórico previo al despliegue Medallion
+
+**Evidencia del 02/10/2026:** el primer corte Azure se desplegó en el grupo
 Student de `brazilsouth`. El smoke híbrido registró cuatro eventos en Event Hubs,
 cuatro procesamientos del worker local (un HIGH), publicación Outbox, score y caso
 en PostgreSQL local, y checkpoints 0/1 en el contenedor ADLS. Esto demuestra
-mensajería y checkpoint reales; no demuestra fraude, Medallion, ML o GenAI
-alojados en Azure. La extensión Medallion está preparada en código e IaC, pero
-mantiene gate cloud pendiente hasta validar su manifiesto y conciliación reales.
-
-La siguiente unidad Azure es **T5-AZURE-MEDALLION-DEPLOYMENT**: validar el Bicep
-incremental sobre el Resource Group existente, revisar el `what-if` y los scopes
-RBAC, desplegar solo el consumer group y el checkpoint adicionales, y demostrar
-Bronze→Silver/Gold/Quarantine con manifiesto y conciliación en ADLS. Registrar
-costo, responsable y hora de teardown. Container Apps continúa bloqueado hasta
-disponer de persistencia Azure compatible.
+mensajería y checkpoint reales; todavía no demostraba Medallion, ML o GenAI
+alojados en Azure. El gate Medallion se cerró el 03/10 con la ejecución manual
+descrita arriba. El fraude online en Azure sigue pendiente de persistencia y
+mensajería de casos; ver `specs/000-platform/tasks.md`.
 
 ## Riesgos conocidos
 

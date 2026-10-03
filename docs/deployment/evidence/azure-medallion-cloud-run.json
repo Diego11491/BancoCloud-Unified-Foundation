@@ -1,0 +1,44 @@
+{
+  "evidence_version": "1.0",
+  "observed_on_utc": "2026-10-03",
+  "scope": "synthetic-medallion-cloud-run",
+  "resource_group": "rg-bancocloud-student-lite",
+  "location": "brazilsouth",
+  "topology": {
+    "core_outbox_publisher_and_bronze_consumer": "local",
+    "event_hubs_and_adls": "azure",
+    "silver_gold_promotion": "azure-container-apps-manual-job"
+  },
+  "job": {
+    "name": "bc-medallion-batch-dv260929",
+    "execution": "bc-medallion-batch-dv260929-lffjhes",
+    "status": "Succeeded",
+    "started_at_utc": "2026-10-03T06:04:31Z",
+    "image_tag": "crlf-20261003",
+    "identity": "user-assigned-managed-identity"
+  },
+  "run": {
+    "id": "e3f5dd1180830b048619",
+    "gold_prefix_existed_before_job": false,
+    "artifacts_created_at_utc": "2026-10-03T06:04:58Z",
+    "bronze": 21,
+    "silver": 21,
+    "duplicate": 0,
+    "quarantine": 0,
+    "gold_artifacts": [
+      "manifest.json",
+      "reconciliation.json",
+      "transactions_by_day_channel.jsonl"
+    ]
+  },
+  "tests": {
+    "cross_platform_and_event_hubs_unit_tests_passed": 10
+  },
+  "limits": [
+    "All transactions and labels are synthetic.",
+    "Gold is a day/channel aggregate, not the dimensional Power BI dataset.",
+    "ML online, Azure OpenAI, Synapse, Azure SQL and Service Bus are not verified by this run.",
+    "Job console logs were unavailable when checked later; job status and ADLS artifacts persisted."
+  ],
+  "subscription_id_or_secrets_recorded": false
+}
